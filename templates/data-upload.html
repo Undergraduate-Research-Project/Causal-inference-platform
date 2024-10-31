@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据分析系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" href="static/css/global-style.css">
+</head>
+<body>
+<div class="container">
+    <div class="sidebar">
+        <h2>菜单</h2>
+        <a href="data-upload.html"><i class="fas fa-upload"></i><span>数据上传</span></a>
+        <a href="data-preparation.html"><i class="fas fa-cogs"></i><span>数据准备</span></a>
+        <a href="statistical-analysis.html"><i class="fas fa-chart-bar"></i><span>统计分析</span></a>
+        <a href="causal-analysis.html"><i class="fas fa-brain"></i><span>因果分析</span></a>
+        <a href="big-model-analysis.html"><i class="fas fa-database"></i><span>大模型分析</span></a>
+        <a href="favorites.html"><i class="fas fa-star"></i><span>收藏夹</span></a>
+        <!-- 设置按钮放置在左下角 -->
+        <a id="settings-button" href="javascript:void(0);"><i class="fas fa-cog"></i></a>
+    </div>
+    <div class="content">
+        <h1>数据上传</h1>
+
+        <form id="upload-form" action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data">
+            <input id="file-upload" type="file" name="file" required style="display: none;">
+        </form>
+        <button id="upload-button" onclick="document.getElementById('file-upload').click();" class="custom-file-upload">
+            <i class="fas fa-upload"></i> 新建分析
+        </button>
+
+        <div class="search-box-container">
+            <input type="text" class="search-box" id="search-box" placeholder="搜索历史记录">
+            <button id="search-button" class="search-button">搜索</button>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>文件名</th>
+                    <th>上传时间</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="history-tbody">
+                <!-- 动态插入历史上传数据 -->
+            </tbody>
+        </table>
+        <p class="error-message" id="error-message">未搜索到匹配的文件。</p>
+        <div class="pagination" id="pagination">
+            <!-- 分页按钮将动态插入 -->
+        </div>
+        <div class="buttons">
+            <button onclick="location.href='index.html'" class="bots">返回主页</button>
+            <button onclick="location.href='data-preparation.html'" class="bots">数据准备</button>
+        </div>
+    </div>
+</div>
+
+<!-- 设置弹窗 -->
+<div id="settings-modal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>设置</h2>
+        <div class="modal-body">
+            <div class="setting-option">
+                <label for="language-select">语言切换:</label>
+                <select id="language-select">
+                    <option value="zh">中文</option>
+                    <option value="en">English</option>
+                </select>
+            </div>
+            <div class="setting-option">
+                <label for="theme-select">主题颜色:</label>
+                <select id="theme-select">
+                    <option value="light">浅色模式</option>
+                    <option value="dark">深色模式</option>
+                </select>
+            </div>
+            <div class="setting-option">
+                <label for="color-select">主色调:</label>
+                <input type="color" id="color-select" value="#273c75">
+            </div>
+            <div class="setting-option">
+                <button id="clear-cache">清理缓存</button>
+                <button id="restore-defaults">恢复默认</button>
+            </div>
+            <div class="setting-option">
+                <button id="view-account">账号管理</button>
+                <button id="logout">退出登录</button>
+            </div>
+            <div class="setting-option">
+                <button id="view-system-info">系统信息</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var sidebar = document.querySelector('.sidebar');
+        var content = document.querySelector('.content');
+        content.style.height = sidebar.offsetHeight + 'px';
+
+        const rowsPerPage = 9;
+        let currentPage = 1;
+        let data = [];
+
+        // 获取历史上传数据
+        fetch('/api/upload-history')
+            .then(response => response.json())
+            .then(responseData => {
+                data = responseData;
+                displayTable(data, currentPage);
+                setupPagination(data);
+            })
+            .catch(error => console.error('Error fetching data:', error));
+
+        function displayTable(data, page) {
+            var tbody = document.getElementById('history-tbody');
+            tbody.innerHTML = '';
+            var start = (page - 1) * rowsPerPage;
+            var end = start + rowsPerPage;
+            var paginatedData = data.slice(start, end);
+
+            if (paginatedData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3">没有历史文件</td></tr>';
+            } else {
+                paginatedData.forEach(item => {
+                    var tr = document.createElement('tr');
+                    var filenameTd = document.createElement('td');
+                    filenameTd.textContent = item.filename;
+                    var dateTd = document.createElement('td');
+                    dateTd.textContent = item.upload_time;
+                    var actionTd = document.createElement('td');
+                    var button = document.createElement('button');
+                    button.className = 'bots';
+                    button.textContent = '下载文件';
+                    button.onclick = function(event) {
+                        event.stopPropagation(); // 阻止事件冒泡
+                        window.location.href = '/uploads/' + item.filename; // 点击按钮下载文件
+                    };
+                    actionTd.appendChild(button);
+                    tr.appendChild(filenameTd);
+                   
+                    tr.appendChild(dateTd);
+                    tr.appendChild(actionTd);
+                    tbody.appendChild(tr);
+
+                    // 行点击事件跳转到数据准备页面
+                    tr.addEventListener('click', function() {
+                        const filename = item.filename;
+                        
+                        // 使用 fetch API 将文件名发送给后端
+                        fetch('/set_session', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ filename: filename }),
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                window.location.href = 'data-preparation.html';
+                            } else {
+                                console.error('Error setting session:', data.message);
+                            }
+                        })
+                        .catch(error => console.error('Error:', error));
+                    });
+                });
+            }
+        }
+
+        function setupPagination(data) {
+            var pagination = document.getElementById('pagination');
+            pagination.innerHTML = '';
+            var pageCount = Math.ceil(data.length / rowsPerPage);
+
+            for (let i = 1; i <= pageCount; i++) {
+                var button = document.createElement('button');
+                button.textContent = i;
+                button.className = 'pagination-button';
+                if (i === currentPage) {
+                    button.disabled = true;
+                }
+                button.addEventListener('click', function() {
+                    currentPage = i;
+                    displayTable(data, currentPage);
+                    setupPagination(data);
+                });
+                pagination.appendChild(button);
+            }
+        }
+
+        // 搜索功能
+        function searchTable() {
+            var filter = document.getElementById('search-box').value.toLowerCase();
+            var filteredData = data.filter(item => item.filename.toLowerCase().includes(filter));
+            displayTable(filteredData, 1);
+            setupPagination(filteredData);
+            var errorMessage = document.getElementById('error-message');
+            if (filteredData.length === 0) {
+                errorMessage.style.display = 'block';
+            } else {
+                errorMessage.style.display = 'none';
+            }
+        }
+
+        document.getElementById('search-box').addEventListener('input', searchTable);
+        document.getElementById('search-button').addEventListener('click', function() {
+            searchTable();
+            document.getElementById('search-box').focus();
+        });
+
+        document.getElementById('file-upload').addEventListener('change', function() {
+            var file = this.files[0];
+            if (file) {
+                var confirmed = confirm('是否上传所选文件？');
+                if (confirmed) {
+                    document.getElementById('upload-form').submit();
+                }
+            }
+        });
+
+        // 设置弹窗功能
+        var settingsButton = document.getElementById('settings-button');
+        var modal = document.getElementById('settings-modal');
+        var closeBtn = document.querySelector('.close');
+
+        // 点击“设置”按钮，显示弹窗
+        settingsButton.addEventListener('click', function() {
+            modal.style.display = 'block';
+        });
+
+        // 点击关闭按钮，隐藏弹窗
+        closeBtn.addEventListener('click', function() {
+            modal.style.display = 'none';
+        });
+
+        // 点击窗口外部，隐藏弹窗
+        window.addEventListener('click', function(event) {
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        });
+
+        // 语言切换功能
+        var languageSelect = document.getElementById('language-select');
+        languageSelect.addEventListener('change', function() {
+            var selectedLanguage = languageSelect.value;
+            if (selectedLanguage === 'zh') {
+                document.documentElement.lang = 'zh-CN';
+                alert('语言已切换至中文');
+            } else if (selectedLanguage === 'en') {
+                document.documentElement.lang = 'en';
+                alert('Language switched to English');
+            }
+        });
+
+        // 主题颜色切换功能
+        var themeSelect = document.getElementById('theme-select');
+        themeSelect.addEventListener('change', function() {
+            var selectedTheme = themeSelect.value;
+            if (selectedTheme === 'light') {
+                document.documentElement.style.setProperty('--sidebar-bg', '#273c75');
+                document.documentElement.style.setProperty('--content-bg', '#ffffff');
+                document.documentElement.style.setProperty('--button-bg', '#273c75');
+                document.documentElement.style.setProperty('--table-header-bg', '#273c75');
+                document.documentElement.style.setProperty('--text-color', '#ffffff');
+                document.documentElement.style.setProperty('--body-bg', '#f4f4f9');
+            } else if (selectedTheme === 'dark') {
+                document.documentElement.style.setProperty('--sidebar-bg', '#111');
+                document.documentElement.style.setProperty('--content-bg', '#444');
+                document.documentElement.style.setProperty('--button-bg', '#111');
+                document.documentElement.style.setProperty('--table-header-bg', '#111');
+                document.documentElement.style.setProperty('--text-color', '#ffffff');
+                document.documentElement.style.setProperty('--body-bg', '#333');
+            }
+        });
+
+        // 主色调切换功能
+        var colorSelect = document.getElementById('color-select');
+        colorSelect.addEventListener('input', function() {
+            var selectedColor = colorSelect.value;
+            document.documentElement.style.setProperty('--sidebar-bg', selectedColor);
+            document.documentElement.style.setProperty('--button-bg', selectedColor);
+            document.documentElement.style.setProperty('--table-header-bg', selectedColor);
+            document.documentElement.style.setProperty('--upload-button-bg', selectedColor); // 更新新建分析按钮颜色
+            document.documentElement.style.setProperty('--search-button-bg', selectedColor); // 更新搜索按钮颜色
+
+        });
+
+        // 其他按钮功能
+        document.getElementById('clear-cache').addEventListener('click', function() {
+            alert('缓存已清理');
+        });
+
+        document.getElementById('restore-defaults').addEventListener('click', function() {
+            alert('已恢复默认设置');
+            languageSelect.value = 'zh';
+            themeSelect.value = 'light';
+            colorSelect.value = '#273c75';
+            document.documentElement.style.setProperty('--sidebar-bg', '#273c75');
+            document.documentElement.style.setProperty('--content-bg', '#ffffff');
+            document.documentElement.style.setProperty('--button-bg', '#273c75');
+            document.documentElement.style.setProperty('--table-header-bg', '#273c75');
+            document.documentElement.style.setProperty('--text-color', '#ffffff');
+            document.documentElement.style.setProperty('--body-bg', '#f4f4f9');
+            document.documentElement.style.setProperty('--upload-button-bg', '#273c75'); // 更新新建分析按钮颜色
+            document.documentElement.style.setProperty('--search-button-bg', '#273c75'); // 更新搜索按钮颜色
+
+        });
+
+        document.getElementById('view-account').addEventListener('click', function() {
+            alert('账号管理页面正在开发中...');
+        });
+
+        document.getElementById('logout').addEventListener('click', function() {
+            alert('您已成功退出登录');
+        });
+
+        document.getElementById('view-system-info').addEventListener('click', function() {
+            alert('系统版本: 1.0.0\n更新日志:\n- 添加新功能\n- 修复已知问题');
+        });
+    });
+</script>
+</body>
+</html>

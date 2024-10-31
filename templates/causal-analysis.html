@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>因果分析平台</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" href="static/css/global-style.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            display: flex;
+        }
+        .content {
+            flex: 1;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-left: 20px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .error-message {
+            color: red;
+            text-align: center;
+            margin: 15px 0;
+        }
+        label {
+            display: block;
+            margin: 15px 0 5px;
+            font-weight: bold;
+        }
+        input[type="file"] {
+            display: none; /* 隐藏文件输入框 */
+        }
+        .upload-button {
+            background-color: #273c75;
+            color: #ffffff;
+            border-radius: 6px;
+            cursor: pointer;
+            padding: 8px 12px; /* 设置适中的内边距 */
+            font-size: 14px; /* 调整字体大小 */
+            margin-left: 10px; /* 添加左边距 */
+            border: none;
+            transition: background-color 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 100px; /* 设置最小宽度 */
+        }
+        .upload-button:hover {
+            background-color: #1e2b52;
+        }
+        .file-name {
+            margin: 5px 0;
+            color: #555;
+            text-align: center;
+        }
+        .button {
+            background-color: #273c75;
+            color: #ffffff;
+            border-radius: 6px;
+            cursor: pointer;
+            padding: 10px 15px; /* 设置适中的内边距 */
+            font-size: 14px; /* 调整字体大小 */
+            transition: background-color 0.3s ease;
+            border: none;
+            width: auto; /* 设置为自动宽度 */
+            margin-top: 20px; /* 与上方元素保持间距 */
+            display: block; /* 使按钮独占一行 */
+            margin-left: auto; /* 居中对齐 */
+            margin-right: auto; /* 居中对齐 */
+        }
+        .button:hover {
+            background-color: #1e2b52;
+        }
+        .upload-section {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start; /* 使上传部分左对齐 */
+            margin-bottom: 20px;
+        }
+        .upload-section:last-child {
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="sidebar">
+        <h2>菜单</h2>
+        <a href="data-upload.html"><i class="fas fa-upload"></i><span>数据上传</span></a>
+        <a href="data-preparation.html"><i class="fas fa-cogs"></i><span>数据准备</span></a>
+        <a href="statistical-analysis.html"><i class="fas fa-chart-bar"></i><span>统计分析</span></a>
+        <a href="causal-analysis.html"><i class="fas fa-brain"></i><span>因果分析</span></a>
+        <a href="big-model-analysis.html"><i class="fas fa-database"></i><span>大模型分析</span></a>
+        <a href="favorites.html"><i class="fas fa-star"></i><span>收藏夹</span></a>
+        <a id="settings-button" href="javascript:void(0);"><i class="fas fa-cog"></i></a>
+    </div>
+    <div class="content">
+        <h1>因果分析</h1>
+
+        {% if error_message %}
+            <p class="error-message">{{ error_message }}</p>
+        {% endif %}
+
+        <form action="{{ url_for('causal_analysis_view') }}" method="post" enctype="multipart/form-data">
+            <div class="upload-section">
+                <label for="variable_file">变量文件:</label>
+                <span>
+                    <button type="button" class="upload-button" onclick="document.getElementById('variable_file').click();">
+                        <i class="fas fa-file-upload"></i> 上传变量文件
+                    </button>
+                </span>
+                <input type="file" id="variable_file" name="variable_file" accept=".csv" onchange="showFileName('variable_file', 'variable_file_name')">
+                <div id="variable_file_name" class="file-name"></div>
+            </div>
+
+            <div class="upload-section">
+                <label for="data_file">数据文件:</label>
+                <span>
+                    <button type="button" class="upload-button" onclick="document.getElementById('data_file').click();">
+                        <i class="fas fa-file-upload"></i> 上传数据文件
+                    </button>
+                </span>
+                <input type="file" id="data_file" name="data_file" accept=".csv" onchange="showFileName('data_file', 'data_file_name')">
+                <div id="data_file_name" class="file-name"></div>
+            </div>
+
+            <button type="submit" class="button">上传并分析</button>
+        </form>
+
+        {% if csv_data %}
+        <h2>分析结果</h2>
+        <table class="csv-table">
+            <thead>
+                <tr>
+                    {% for col in csv_data[0].keys() %}
+                    <th>{{ col }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in csv_data %}
+                <tr>
+                    {% for value in row.values() %}
+                    <td>{{ value }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <button class="button" onclick="window.location.href='{{ url_for('visualize_csv') }}'">可视化 CSV</button> <!-- 添加可视化按钮 -->
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    function showFileName(inputId, displayId) {
+        var input = document.getElementById(inputId);
+        var display = document.getElementById(displayId);
+        if (input.files.length > 0) {
+            display.textContent = '已选择文件: ' + input.files[0].name;
+        } else {
+            display.textContent = '';
+        }
+    }
+</script>
+
+</body>
+</html>

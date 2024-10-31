@@ -1,0 +1,485 @@
+:root {
+    --sidebar-bg: #273c75; /* 侧边栏背景颜色 */
+    --content-bg: #ffffff; /* 内容区背景颜色 */
+    --button-bg: #273c75; /* 按钮背景颜色 */
+    --table-header-bg: #273c75; /* 表头背景颜色 */
+    --text-color: #ffffff; /* 文本颜色 */
+    --body-bg: #f4f4f9; /* 全局背景颜色 */
+    --upload-button-bg: #1e2b52; /* 新建分析按钮背景颜色 */
+    --search-button-bg: #1e2b52; /* 搜索按钮背景颜色 */
+}
+
+/* 使用全局变量 */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    background-color: var(--body-bg);
+    color: #333;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.container {
+    width: 95%;
+    height: 95%;
+    border: 1px solid #d3d3d3;
+    border-radius: 8px;
+    display: flex;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+/* 侧边栏样式 */
+.sidebar {
+    position: relative;
+    width: 50px;
+    height: 100%;
+    background: var(--sidebar-bg);
+    padding: 10px;
+    color: var(--text-color);
+    border-right: 1px solid #bdc3c7;
+    transition: width 0.3s ease-in-out;
+    overflow: hidden;
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* 侧边栏顶部与底部对齐 */
+}
+
+.sidebar:hover {
+    width: 200px;
+}
+
+.sidebar h2 {
+    font-size: 1.4em;
+    margin-bottom: 20px;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.sidebar:hover h2 {
+    opacity: 1;
+}
+
+a {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    color: var(--text-color);
+    text-decoration: none;
+    transition: background-color 0.3s;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+a:hover {
+    background-color: #2980b9;
+    padding-left: 15px;
+}
+
+a i {
+    font-size: 20px;
+    width: 30px;
+}
+
+a span {
+    margin-left: 15px;
+    display: none;
+    transition: display 0.3s ease-in-out;
+}
+
+.sidebar:hover a span,
+.sidebar:hover .user-info span {
+    display: block;
+}
+
+/* 设置按钮样式 */
+#settings-button {
+    margin-top: auto;
+    margin-bottom: 10px;
+    align-self: flex-start;
+    color: var(--text-color); /* 统一图标颜色 */
+}
+
+#settings-button i {
+    font-size: 24px;
+}
+
+/* 内容样式 */
+.content {
+    flex-grow: 1;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--content-bg);
+    border: 1px solid #d3d3d3;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    overflow: hidden;
+    position: relative;
+    /* 可选 */
+    padding-bottom: 50px;
+    overflow-y: auto;
+}
+
+.content h1 {
+    color: #2c3e50;
+    font-size: 30px;
+    align-items: flex-start; 
+    margin-bottom: 20px;
+    /* 可选 */
+    border-bottom: 2px solid #f4f4f9;
+    padding-bottom: 10px;
+}
+
+.content p {
+    color: #555;
+    font-size: 18px;
+    text-align: center;
+    line-height: 1.6;
+}
+
+.separator {
+    width: 100%;
+    height: 1px;
+    background-color: #bdc3c7;
+    margin: 10px 0;
+}
+
+button,
+.bots {
+    background-color: var(--button-bg);
+    color: var(--text-color);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 10px 20px;
+    font-size: 16px;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+    margin-top: 10px;
+}
+
+button:hover,
+.bots:hover {
+    background-color: #1e2b52;
+    transform: scale(1.05);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    border-radius: 8px;
+}
+
+th, td {
+    padding: 15px; /* 增大padding */
+    border-bottom: 1px solid #ddd;
+    text-align: center;
+    font-size: 18px; /* 增大字体 */
+    font-weight: bold; /* 加粗字体 */
+}
+
+th {
+    background-color: var(--table-header-bg);
+    color: var(--text-color);
+}
+
+td {
+    background-color: #f9f9f9;
+    cursor: pointer; /* 添加鼠标悬停效果 */
+}
+
+tr:nth-child(even) td {
+    background-color: #e0e0e0; /* 偶数行背景色 */
+}
+
+tr:hover td {
+    background-color: #c8d8e4; /* 鼠标悬停行背景色 */
+}
+
+.file-info {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+input[type="file"] {
+    position: absolute;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+}
+
+.custom-file-upload {
+    background-color: var(--upload-button-bg);
+    color: var(--text-color);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 10px 20px;
+    font-size: 16px;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+    margin-top: 50px;
+    margin-bottom: 10px;
+    position: absolute;
+    right: 20px;
+    top: 0;
+}
+
+.custom-file-upload:hover {
+    background-color: #2980b9;
+    transform: scale(1.05);
+}
+
+.search-box-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 25px; /* 下移约0.5cm */
+}
+
+.search-box {
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 16px;
+    margin-right: 10px;
+}
+
+.search-button {
+    background-color:var(--search-button-bg);
+    color: var(--text-color);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 10px 20px;
+    font-size: 16px;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+    height: 40px; /* 与search-box等高 */
+    margin-top: -2px; /* 上移约1cm */
+}
+
+.search-button:hover {
+    background-color: #2980b9;
+    transform: scale(1.05);
+}
+
+.buttons {
+    position: absolute;
+    bottom: 100px; /* 上移约5cm */
+    right: 20px;
+    display: flex;
+    gap: 10px;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    margin-top: 1px;
+}
+
+.pagination button {
+    background-color: var(--button-bg);
+    color: var(--text-color);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 10px 20px;
+    font-size: 16px;
+    margin: 0 5px;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.pagination button:hover {
+    background-color: #2980b9;
+    transform: scale(1.05);
+}
+
+.pagination button:disabled {
+    background-color: #bdc3c7;
+    cursor: not-allowed;
+}
+
+.error-message {
+    color: red;
+    font-size: 14px;
+    margin-top: 10px;
+    display: none;
+    text-align: center;
+}
+
+/* 弹窗样式 */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.5); /* 半透明背景 */
+}
+
+.modal-content {
+    background-color: #ffffff;
+    margin: 10% auto;
+    padding: 20px;
+    border-radius: 15px; /* 圆角效果 */
+    width: 50%;
+    max-width: 600px; /* 最大宽度 */
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); /* 阴影效果 */
+    animation: slide-down 0.5s ease; /* 弹出动画 */
+}
+
+/* 弹出动画 */
+@keyframes slide-down {
+    from {
+        transform: translateY(-100px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+    color: #333;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.modal-body {
+    margin-top: 20px;
+}
+
+.setting-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #ddd;
+    transition: background-color 0.3s ease; /* 背景过渡效果 */
+}
+
+.setting-option:hover {
+    background-color: #f1f1f1; /* 悬停效果 */
+}
+
+.setting-option label {
+    width: 150px; /* 调整宽度 */
+    margin-right: 10px;
+    text-align: right;
+    font-weight: bold; /* 加粗字体 */
+}
+
+.setting-option select,
+.setting-option input[type="color"] {
+    padding: 5px;
+    width: 250px;
+    border: 1px solid #ccc; /* 边框效果 */
+    border-radius: 4px;
+    transition: border-color 0.3s ease; /* 边框过渡效果 */
+}
+
+.setting-option select:focus,
+.setting-option input[type="color"]:focus {
+    border-color: #2980b9; /* 聚焦效果 */
+}
+
+.setting-option button {
+    background-color: #1e2b52;
+    color: var(--text-color);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 10px 20px;
+    font-size: 16px;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+    margin-right: 10px;
+}
+
+.setting-option button:hover {
+    background-color: #2980b9;
+    transform: scale(1.05);
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    margin-top: auto; /* 上下居中 */
+    margin-bottom: 1cm; /* 距离底部1cm */
+    cursor: pointer;
+    position: relative;
+}
+
+.user-info img {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+.user-info span {
+    color: rgb(250, 248, 248); /* 修改字体颜色为黑色 */
+    display: none; /* 初始隐藏 */
+}
+
+.user-dropdown {
+    display: none;
+    position: absolute;
+    top: -100px; 
+    right: 0;
+    background: rgb(170, 177, 220);
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    padding: 5px;
+    z-index: 1003;
+}
+
+.user-dropdown a {
+    text-decoration: none;
+    padding: 10px;
+    display: block;
+}
+
+.user-dropdown a:hover {
+    background-color: #273c75;
+}
+
+.modal-iframe {
+    display: none; 
+    position: fixed;
+    top: 50%;  
+    left: 50%; 
+    transform: translate(-50%, -50%); 
+    width: 80%;  
+    max-width: 600px; 
+    height: 70%; 
+    max-height: 500px;
+    border: 1px solid #ccc; 
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+    background-color: #ffffff; 
+    z-index: 1000;
+}
