@@ -416,25 +416,25 @@ def causal_analysis_view():
 
 
 
-@app.route('/visualize-csv', methods=['GET'])
-def visualize_csv():
+@app.route('/get-csv-data', methods=['GET'])
+def get_csv_data():
     output_file_path = os.path.join('static', 'result.csv')
 
     if not os.path.exists(output_file_path):
-        return "结果文件未找到", 404
+        return jsonify({"error": "结果文件未找到"}), 404
 
     # 读取 CSV 文件
     df = pd.read_csv(output_file_path)
     csv_data = df.to_dict(orient='records')  # 用于表格展示
 
-    # 检查并提取 Node1 和 Node2 列
+    # 提取 Node1 和 Node2 列
     if 'Node1' in df.columns and 'Node2' in df.columns:
-        nodes = set(df['Node1']).union(set(df['Node2']))
+        nodes = list(set(df['Node1']).union(set(df['Node2'])))
         edges = [{'source': row['Node1'], 'target': row['Node2']} for _, row in df.iterrows()]
     else:
         nodes, edges = [], []
 
-    return render_template('visualize_csv.html', csv_data=csv_data, nodes=list(nodes), edges=edges)
+    return jsonify({"csv_data": csv_data, "nodes": nodes, "edges": edges})
 
 @app.route('/big-model-analysis.html')
 def big_model_analysis():
