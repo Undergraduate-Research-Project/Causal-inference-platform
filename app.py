@@ -368,15 +368,15 @@ def generate_chart():
 
 @app.route('/causal-analysis.html', methods=['GET', 'POST'])
 def causal_analysis_view():
-    csv_data = []  # 用于存储CSV数据
+    csv_data = []
     output_file_path = os.path.join('static', 'result.csv')
 
     if request.method == 'POST':
         variable_file = request.files['variable_file']
         data_file = request.files['data_file']
+        algorithm = request.form.get('algorithm')  # 获取用户选择的算法
 
         if variable_file and data_file:
-            # 保存上传的文件
             timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
             variable_file_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{timestamp}_{variable_file.filename}")
             data_file_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{timestamp}_{data_file.filename}")
@@ -384,33 +384,32 @@ def causal_analysis_view():
             variable_file.save(variable_file_path)
             data_file.save(data_file_path)
 
-            # 调用 `PC算法` 文件夹下的 `main4.py` 脚本
-            try:
+            # 根据选择的算法运行不同的脚本
+            if algorithm == 'pc':
+                script_path = 'PC算法/main4.py'
                 result = subprocess.run(
-                    ['python', 'PC算法/main4.py', '--variable_file', variable_file_path, '--data_file', data_file_path,
-                     '--output_file', output_file_path],
-                    capture_output=True,
-                    text=True
+                    ['python', script_path, '--variable_file', variable_file_path, '--data_file', data_file_path, '--output_file', output_file_path],
+                    capture_output=True, text=True
                 )
+            elif algorithm == 'gies':
                 
-                if result.returncode != 0:
-                    error_message = f"因果分析失败: {result.stderr}"
-                    return render_template('causal-analysis.html', error_message=error_message), 500
-
-                # 成功生成结果，读取CSV文件
-                if os.path.exists(output_file_path):
-                    df = pd.read_csv(output_file_path)
-                    csv_data = df.to_dict(orient='records')  # 将数据转换为字典格式
-                else:
-                    error_message = "生成的结果文件不存在。"
-                    return render_template('causal-analysis.html', error_message=error_message), 500
-
-                # 返回结果和CSV数据
-                return render_template('causal-analysis.html', csv_data=csv_data)
-
-            except Exception as e:
-                error_message = f"运行算法时出现错误: {e}"
+                script_path = 'GIES算法/mymain.py'  # 更新为GIES算法的路径
+                result = subprocess.run(
+                    ['python', script_path, '--variable_file', variable_file_path, '--data_file', data_file_path, '--output_file', output_file_path],
+                    capture_output=True, text=True
+                )
+            print(result.stdout)
+            if result.returncode != 0:
+                error_message = f"因果分析失败: {result.stderr}"
                 return render_template('causal-analysis.html', error_message=error_message), 500
+            if os.path.exists(output_file_path):
+                df = pd.read_csv(output_file_path)
+                csv_data = df.to_dict(orient='records')
+            else:
+                error_message = "生成的结果文件不存在。"
+                return render_template('causal-analysis.html', error_message=error_message), 500
+
+            return render_template('causal-analysis.html', csv_data=csv_data)
 
     return render_template('causal-analysis.html', csv_data=csv_data)
 
