@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>因果分析</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" href="static/css/global-style.css">
+    <script src="https://cdn.plot.ly/plotly-2.6.3.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            display: flex;
+        }
+        .content {
+            flex: 1;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-left: 20px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+            /* 卡片式布局样式 */
+        .card {
+            background-color: #ffffff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+        }
+        /* 放大上传区卡片 */
+        .upload-card {
+            padding: 30px;
+        }
+            /* 标题样式 */
+        h1 {
+            color: #007bff;
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        h2 {
+            color: #ffffff;
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+        .error-message {
+            color: red;
+            text-align: center;
+            margin: 15px 0;
+        }
+        label {
+            display: block;
+            margin: 15px 0 5px;
+            font-weight: bold;
+        }
+        input[type="file"] {
+            display: none; /* 隐藏文件输入框 */
+        }
+        .upload-button {
+            background-color: #1e2b52;
+            color: #ffffff;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 14px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .upload-button:hover {
+            background-color: #2980b9;
+        }
+        .file-name {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #555;
+        }
+        .button {
+            background-color: #1e2b52;
+            color: #ffffff;
+            border-radius: 6px;
+            cursor: pointer;
+            padding: 10px 15px;
+            font-size: 14px;
+            transition: background-color 0.3s ease;
+            border: none;
+            width: auto;
+            margin-top: 20px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .button:hover {
+            background-color: #2980b9;
+        }
+        .upload-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            /* padding: 15px; */
+            padding: 30px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 200px;
+        }
+
+        .upload-section label {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+    /* 上传区样式 */
+        .upload-row {
+            display: flex;
+            gap: 150px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+
+        .result-content {
+            display: flex;
+            gap: 20px;
+            justify-content: space-between;
+        }
+            /* 数据表容器 */
+        #csvTableContainer {
+            flex: 1;
+            max-width: 45%;
+            overflow: hidden;
+            box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            padding: 40px; /* 增加内边距 */
+            background-color: #ffffff; /* 设置背景色，确保与表格分隔 */
+        }
+        /* 表格样式 */
+        .csv-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: center;
+        }
+        .csv-table th, .csv-table td {
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+        .csv-table th {
+            background-color: #1e2b52;
+            color: #ffffff;
+        }
+
+        /* 图表容器 */
+        #graph-container {
+            flex: 1;
+            max-width: 50%;
+            height: 600px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="sidebar">
+        <h2>菜单</h2>
+        <a href="data-upload.html"><i class="fas fa-upload"></i><span>数据上传</span></a>
+        <a href="data-preparation.html"><i class="fas fa-cogs"></i><span>数据准备</span></a>
+        <a href="statistical-analysis.html"><i class="fas fa-chart-bar"></i><span>统计分析</span></a>
+        <a href="causal-analysis.html"><i class="fas fa-brain"></i><span>因果分析</span></a>
+        <a href="big-model-analysis.html"><i class="fas fa-database"></i><span>大模型分析</span></a>
+        <a href="favorites.html"><i class="fas fa-star"></i><span>收藏夹</span></a>
+        <a id="settings-button" href="javascript:void(0);"><i class="fas fa-cog"></i></a>
+    </div>
+    <div class="content">
+        <h1>因果分析</h1>
+    
+        {% if error_message %}
+            <p class="error-message">{{ error_message }}</p>
+        {% endif %}
+    
+        <!-- 上传区卡片 -->
+        <div class="card">
+            <form action="{{ url_for('causal_analysis_view') }}" method="post" enctype="multipart/form-data">
+                <h2>上传文件</h2>
+                <div class="upload-row">
+                    <div class="upload-section">
+                        <label for="variable_file">变量文件:</label>
+                        <button type="button" class="upload-button" onclick="document.getElementById('variable_file').click();">
+                            <i class="fas fa-file-upload"></i> 上传变量文件
+                        </button>
+                        <input type="file" id="variable_file" name="variable_file" accept=".csv" onchange="showFileName('variable_file', 'variable_file_name')">
+                        <div id="variable_file_name" class="file-name">支持格式:CSV</div>
+                    </div>
+    
+                    <div class="upload-section">
+                        <label for="data_file">数据文件:</label>
+                        <button type="button" class="upload-button" onclick="document.getElementById('data_file').click();">
+                            <i class="fas fa-file-upload"></i> 上传数据文件
+                        </button>
+                        <input type="file" id="data_file" name="data_file" accept=".csv" onchange="showFileName('data_file', 'data_file_name')">
+                        <div id="data_file_name" class="file-name">支持格式:CSV</div>
+                    </div>
+                </div>
+                <button type="submit" class="button">上传并分析</button>
+            </form>
+        </div>
+    
+        <!-- 分析结果卡片 -->
+        <div class="card result-card">
+            <h2>分析结果</h2>
+            <div class="result-content">
+                <!-- 左侧数据表 -->
+                <div id="csvTableContainer">
+                    <table class="csv-table" id="csvTable">
+                        <thead>
+                            <tr id="tableHeaders"></tr>
+                        </thead>
+                        <tbody id="tableBody"></tbody>
+                    </table>
+                </div>
+
+                <!-- 右侧可视化图 -->
+                <div id="graph-container"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 显示文件名函数
+    function showFileName(inputId, displayId) {
+        var input = document.getElementById(inputId);
+        var display = document.getElementById(displayId);
+        display.textContent = input.files.length > 0 ? '已选择文件: ' + input.files[0].name : '';
+    }
+    // 渲染 CSV 表格
+    function renderTable(csvData) {
+        const tableHeaders = document.getElementById("tableHeaders");
+        const tableBody = document.getElementById("tableBody");
+
+        // 清空现有内容
+        tableHeaders.innerHTML = '';
+        tableBody.innerHTML = '';
+
+        // 添加表头
+        if (csvData.length > 0) {
+            Object.keys(csvData[0]).forEach(col => {
+                const th = document.createElement("th");
+                th.textContent = col;
+                tableHeaders.appendChild(th);
+            });
+        }
+
+        // 添加表格数据
+        csvData.forEach(row => {
+            const tr = document.createElement("tr");
+            Object.values(row).forEach(value => {
+                const td = document.createElement("td");
+                td.textContent = value;
+                tr.appendChild(td);
+            });
+            tableBody.appendChild(tr);
+        });
+    }
+
+    // 渲染三维图表
+    function renderGraph(nodes, edges) {
+        if (typeof Plotly === 'undefined') {
+            console.error("Plotly 未加载，请检查脚本引入。");
+            return;
+        }
+
+        const nodePositions = {};
+        nodes.forEach((node, index) => {
+            nodePositions[node] = {
+                x: Math.cos(index * 2 * Math.PI / nodes.length),
+                y: Math.sin(index * 2 * Math.PI / nodes.length),
+                z: Math.sin(index * 2 * Math.PI / nodes.length)
+            };
+        });
+
+        const edgeTraces = edges.map(edge => {
+            const start = nodePositions[edge.source];
+            const end = nodePositions[edge.target];
+
+            return {
+                type: 'scatter3d',
+                mode: 'lines',
+                x: [start.x, end.x, null],
+                y: [start.y, end.y, null],
+                z: [start.z, end.z, null],
+                line: { width: 2, color: '#888' },
+                showlegend: false
+            };
+        });
+
+        const nodeTrace = {
+            type: 'scatter3d',
+            mode: 'markers+text',
+            x: nodes.map(node => nodePositions[node].x),
+            y: nodes.map(node => nodePositions[node].y),
+            z: nodes.map(node => nodePositions[node].z),
+            marker: { size: 5, color: '#273c75' },
+            text: nodes,
+            textposition: 'bottom center'
+        };
+
+        const arrowTraces = edges.map(edge => {
+            const end = nodePositions[edge.target];
+            const arrowX = end.x * 0.9;
+            const arrowY = end.y * 0.9;
+            const arrowZ = end.z * 0.9;
+
+            return {
+                type: 'scatter3d',
+                mode: 'markers',
+                x: [arrowX],
+                y: [arrowY],
+                z: [arrowZ],
+                marker: {
+                    size: 6,
+                    color: '#888',
+                    symbol: 'triangle-up',
+                    opacity: 1
+                },
+                showlegend: false,
+                hoverinfo: 'skip'
+            };
+        });
+
+        const data = [...edgeTraces, nodeTrace, ...arrowTraces];
+        const layout = {
+            title: '三维有向图展示',
+            scene: {
+                xaxis: { showgrid: false, zeroline: false, visible: false },
+                yaxis: { showgrid: false, zeroline: false, visible: false },
+                zaxis: { showgrid: false, zeroline: false, visible: false }
+            },
+            showlegend: false
+        };
+
+        Plotly.newPlot('graph-container', data, layout);
+    }
+
+    // 自动加载并可视化数据
+    function fetchData() {
+        fetch('/get-csv-data')
+            .then(response => response.json())
+            .then(data => {
+                console.log("Data received:", data); // 调试日志
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    renderTable(data.csv_data);
+                    renderGraph(data.nodes, data.edges);
+                    document.getElementById("csvTableContainer").style.display = "block"; // 默认展开表格
+                }
+            })
+            .catch(error => console.error("获取数据时出错:", error));
+    }
+
+    // 页面加载时获取数据
+    document.addEventListener('DOMContentLoaded', fetchData);
+</script>
+</body>
+</html>

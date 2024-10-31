@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据分析系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link rel="stylesheet" href="static/css/global-style.css">
+    <style>
+        .main-content {
+            display: flex;
+            flex-grow: 1;
+            padding: 20px;
+            background-color: #ffffff;
+            border-top-right-radius: 8px;
+            border-bottom-right-radius: 8px;
+            overflow-y: auto;
+        }
+
+        .fields-container {
+            width: 20%;
+            max-width: 250px;
+            display: flex;
+            flex-direction: column;
+            margin-right: 20px;
+        }
+
+        .fields-container h2 {
+            color: #2c3e50;
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+
+        #fields {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: 65vh;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #f4f4f9;
+        }
+
+        #fields li {
+            padding: 10px;
+            margin: 5px;
+            background-color: #eeeeee;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+
+        #fields li:hover {
+            background-color: #3498db;
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .drop-zone-container {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 20px;
+        }
+
+        .drop-zone {
+            position: relative;
+            height: 50px;
+            margin-bottom: 15px;
+            border: 2px dashed #cccccc;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #aaaaaa;
+            font-weight: bold;
+            background-color: #f4f4f9;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.3s;
+            overflow: hidden;
+        }
+
+        .drop-zone:hover {
+            background-color: #d3d3d3;
+            transform: scale(1.02);
+        }
+
+
+        .drop-zone:hover::before {
+            content: attr(data-var-type);
+            position: absolute;
+            left: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #3498db;
+            font-size: 14px;
+        }
+
+        .drop-zone::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 0;
+            height: 100%;
+            background: rgba(52, 152, 219, 0.2);
+            transition: width 0.3s ease-in-out;
+        }
+
+        .drop-zone:hover::after {
+            width: 100%;
+        }
+
+        .chart-area {
+            width: 80%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        #chart {
+            flex-grow: 1;
+            border: 1px solid #cccccc;
+            border-radius: 4px;
+            padding: 10px;
+            min-height: 600px;
+            background-color: #f9f9f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #chart svg {
+            cursor: grab;
+        }
+
+        .dragged-block {
+            position: absolute;
+            padding: 8px 16px;
+            background-color: #3498db;
+            color: white;
+            border-radius: 10px;
+            font-weight: bold;
+            pointer-events: none;
+            opacity: 0.9;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .tooltip {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: #ffffff;
+            padding: 8px 12px;
+            border-radius: 4px;
+            pointer-events: none;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .chart-type-buttons {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: flex-start;
+        }
+
+        .chart-type-buttons button {
+            background-color: #34495e;
+            margin-right: 10px;
+        }
+
+        .chart-type-buttons button.active {
+            background-color: #1abc9c;
+        }
+
+        .export-button {
+            margin-left: 10px;
+            background-color: #2ecc71;
+        }
+
+        .export-button:hover {
+            background-color: #27ae60;
+        }
+
+        /* 自定义滚动条样式 */
+        #fields::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #fields::-webkit-scrollbar-thumb {
+            background-color: #1e2b52;
+            border-radius: 4px;
+        }
+
+        .data-table {
+            margin-top: 20px;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        .toggle-table-button {
+            background-color: #0b2130;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            padding: 10px 20px;
+            font-size: 16px;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+            margin-bottom: 10px;
+            align-self: flex-start;
+        }
+
+        .data-table-container {
+            max-height: 0;
+            overflow-y: hidden;
+            transition: max-height 0.5s ease;
+        }
+
+        .data-table-container.active {
+            max-height: 50vh;
+            /* 设置最大高度为视口高度的50% */
+            overflow-y: auto;
+        }
+
+        .data-table th,
+        .data-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+
+        .data-table th {
+            background-color: #f2f2f2;
+            color: #333;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h2>菜单</h2>
+            <a href="data-upload.html"><i class="fas fa-upload"></i><span>数据上传</span></a>
+            <a href="data-preparation.html"><i class="fas fa-cogs"></i><span>数据准备</span></a>
+            <a href="statistical-analysis.html"><i class="fas fa-chart-bar"></i><span>统计分析</span></a>
+            <a href="causal-analysis.html"><i class="fas fa-brain"></i><span>因果分析</span></a>
+            <a href="{{ url_for('visualize_csv') }}"><i class="fas fa-eye"></i><span>可视化 CSV</span></a> 
+            <a href="big-model-analysis.html"><i class="fas fa-database"></i><span>大模型分析</span></a>
+            <a href="favorites.html"><i class="fas fa-star"></i><span>收藏夹</span></a>
+            <div class="user-info" onclick="toggleDropdown()" onmouseleave="hideDropdown()">
+                <img src="{{ url_for('static', filename='images/admin.png') }}" alt="User">
+                <span>用户名</span>
+                <div class="user-dropdown">
+                    <a href="profile.html">个人信息</a>
+                    <a href="logout.html">退出系统</a>
+                    <a href="javascript:void(0);" onclick="openSettingsModal()" id="settings-button">设置</a>
+                </div>
+            </div>
+        </div>
+        <div class="main-content">
+            <div class="fields-container">
+                <h2>字段列表</h2>
+                <ul id="fields">
+                    {% for column in columns %}
+                    <li draggable="true" ondragstart="drag(event)" ondragend="endDrag(event)" id="{{ column }}">{{
+                        column }}</li>
+                    {% endfor %}
+                </ul>
+                <div class="drop-zone-container">
+                    <div class="drop-zone" ondrop="drop(event, 'x')" ondragover="allowDrop(event)" data-var-type="X 轴">
+                        X 轴
+                    </div>
+                    <div class="drop-zone" ondrop="drop(event, 'y')" ondragover="allowDrop(event)" data-var-type="Y 轴">
+                        Y 轴
+                    </div>
+                    <div class="drop-zone" ondrop="drop(event, 'color')" ondragover="allowDrop(event)"
+                        data-var-type="颜色">
+                        颜色
+                    </div>
+                    <div class="drop-zone" ondrop="drop(event, 'size')" ondragover="allowDrop(event)"
+                        data-var-type="大小">
+                        大小
+                    </div>
+                    <div class="drop-zone" ondrop="drop(event, 'opacity')" ondragover="allowDrop(event)"
+                        data-var-type="透明度">
+                        透明度
+                    </div>
+                </div>
+                <button onclick="generateChart()">生成图表</button>
+            </div>
+            <div class="chart-area">
+                <div class="chart-type-buttons">
+                    <button id="scatter-button" class="active" onclick="setChartType('scatter')">散点图</button>
+                    <button id="bar-button" onclick="setChartType('bar')">条形图</button>
+                    <button id="line-button" onclick="setChartType('line')">折线图</button>
+                    <button class="export-button" onclick="exportChart()">导出图表</button>
+                </div>
+                <div id="chart">
+                    <div class="tooltip" id="tooltip"></div>
+                    生成的图表将显示在这里
+                </div>
+                <button class="toggle-table-button" onclick="toggleDataTable()">展开数据表</button>
+                <div class="data-table-container" id="data-table-container">
+                    <table class="data-table" id="data-table">
+                        <thead>
+                            <tr>
+                                <th>数据点序号</th>
+                                <th>X 轴值</th>
+                                <th>Y 轴值</th>
+                                <th>颜色</th>
+                                <th>大小</th>
+                                <th>透明度</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeSettingsModal()">&times;</span>
+            <h2>设置</h2>
+            <div class="modal-body">
+                <div class="setting-option">
+                    <label for="language-select">语言切换:</label>
+                    <select id="language-select">
+                        <option value="zh">中文</option>
+                        <option value="en">English</option>
+                    </select>
+                </div>
+                <div class="setting-option">
+                    <label for="theme-select">主题颜色:</label>
+                    <select id="theme-select">
+                        <option value="light">浅色模式</option>
+                        <option value="dark">深色模式</option>
+                    </select>
+                </div>
+                <div class="setting-option">
+                    <label for="color-select">主色调:</label>
+                    <input type="color" id="color-select" value="#273c75">
+                </div>
+                <div class="setting-option">
+                    <button id="clear-cache">清理缓存</button>
+                    <button id="restore-defaults">恢复默认</button>
+                </div>
+                <div class="setting-option">
+                    <button id="view-account">账号管理</button>
+                    <button id="logout">退出登录</button>
+                </div>
+                <div class="setting-option">
+                    <button id="view-system-info">系统信息</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let dropData = {
+            x: null,
+            y: null,
+            color: null,
+            size: null,
+            opacity: null
+        };
+
+        let chartType = 'scatter';
+        let draggedBlock = null;
+
+        function allowDrop(event) {
+            event.preventDefault();
+        }
+
+        function toggleDropdown() {
+            var dropdown = document.querySelector('.user-dropdown');
+            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function hideDropdown() {
+            var dropdown = document.querySelector('.user-dropdown');
+            dropdown.style.display = 'none';
+        }
+
+        function drag(event) {
+            const block = document.createElement('div');
+            block.className = 'dragged-block';
+            block.innerText = event.target.id;
+            document.body.appendChild(block);
+            draggedBlock = block;
+
+            event.dataTransfer.setData("text", event.target.id);
+            document.addEventListener('mousemove', moveBlock);
+
+            //当拖动时，暂时改变背景色和文字颜色
+            // event.target.style.backgroundColor = '#3498db';
+            // event.target.style.color = '#ffffff';
+        }
+        function moveBlock(event) {
+            if (draggedBlock) {
+                draggedBlock.style.left = (event.pageX + 10) + 'px';  // 确保方块跟随鼠标光标
+                draggedBlock.style.top = (event.pageY + 10) + 'px';
+            }
+        }
+        function updateFieldColors() {
+            const fieldItems = document.querySelectorAll("#fields li");  // 获取所有字段列表项
+            fieldItems.forEach(item => {
+                // 检查 dropData 中是否有对应的字段
+                if (Object.values(dropData).includes(item.id)) {
+                    item.style.backgroundColor = '#3498db';  // 如果有，则改变背景色
+                    item.style.color = '#ffffff';  // 改变文字颜色
+                } else {
+                    item.style.backgroundColor = '';  // 否则恢复默认背景色
+                    item.style.color = '';  // 恢复默认文字颜色
+                }
+            });
+        }
+        function drop(event, axis) {
+            event.preventDefault();
+            let data = event.dataTransfer.getData("text");
+            console.log(dropData);
+
+
+            dropData[axis] = data;
+            const dropZone = event.target;
+            dropZone.innerText = data;
+            dropZone.classList.add('active');
+            dropZone.draggable = true;  // 使元素可拖动
+            dropZone.ondragstart = drag;  // 设置拖动事件
+            dropZone.ondragend = endDrag;  // 设置拖动结束事件
+            event.target.style.backgroundColor = '#1abc9c';
+            event.target.style.color = '#ffffff';
+
+            if (draggedBlock) {
+                draggedBlock.remove();
+                draggedBlock = null;
+                document.removeEventListener('mousemove', moveBlock);
+            }
+            updateFieldColors();
+            console.log(dropData);
+
+        }
+        const axisMap = {
+            'x 轴': 'x',
+            'y 轴': 'y',
+            '颜色': 'color',
+            '大小': 'size',
+            '透明度': 'opacity'
+        };
+
+        function endDrag(event) {
+            if (draggedBlock) {
+                draggedBlock.remove();
+                draggedBlock = null;
+                document.removeEventListener('mousemove', moveBlock);
+            }
+
+            if (event.target.classList.contains('drop-zone')) {
+                // 获取当前拖放区的 axis 值
+                const axisLabel = event.target.getAttribute('data-var-type').toLowerCase();
+
+                // 使用映射对象将 axisLabel 转换为 dropData 中的属性名
+                const axis = axisMap[axisLabel];
+                // 清除拖放区内容
+                event.target.innerText = event.target.getAttribute('data-var-type');
+                event.target.style.backgroundColor = '#f4f4f9';
+                event.target.style.color = '#aaaaaa';
+
+                if (axis) {
+                    dropData[axis] = null;
+                }
+                console.log(axis);
+                console.log(dropData);
+            }
+
+            updateFieldColors();
+        }
+
+
+        function setChartType(type) {
+            chartType = type;
+            document.getElementById('scatter-button').classList.remove('active');
+            document.getElementById('bar-button').classList.remove('active');
+            document.getElementById('line-button').classList.remove('active');
+
+            if (type === 'scatter') {
+                document.getElementById('scatter-button').classList.add('active');
+            } else if (type === 'bar') {
+                document.getElementById('bar-button').classList.add('active');
+            } else if (type === 'line') {
+                document.getElementById('line-button').classList.add('active');
+            }
+        }
+
+        function generateChart() {
+            if (!dropData.x && !dropData.y) {
+                alert("请至少选择一个X轴或Y轴字段变量！");
+                return;
+            }
+
+            fetch('/api/generate-chart', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ ...dropData, chartType })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                        return;
+                    }
+
+                    if (chartType === 'line') {
+                        renderLineChart(data.plot_data, data.x_axis, data.y_axis);
+                    } else if (chartType === 'scatter') {
+                        renderScatterChart(data.plot_data, data.x_axis, data.y_axis, data.color, data.size, data.opacity);
+                    } else if (chartType === 'bar') {
+                        renderBarChart(data.plot_data, data.x_axis, data.y_axis, data.color);
+                    }
+                    populateDataTable(data.plot_data, data.x_axis, data.y_axis, data.color, data.size, data.opacity);
+                    const dataTableContainer = document.getElementById('data-table-container');
+                    dataTableContainer.classList.remove('active');
+                    document.querySelector('.toggle-table-button').innerText = '展开数据表';
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        function clearSelection(axis) {
+            dropData[axis] = null;
+            const dropZone = document.querySelector(`.drop-zone[data-var-type="${axis === 'x' ? 'X 轴' : axis === 'y' ? 'Y 轴' : axis === 'color' ? '颜色' : axis === 'size' ? '大小' : '透明度'}"]`);
+            dropZone.innerText = dropZone.getAttribute('data-var-type');
+            dropZone.classList.remove('active');
+        }
+
+        function renderScatterChart(data, xField, yField, colorField, sizeField, opacityField) {
+            const chart = document.getElementById('chart');
+            chart.innerHTML = '';
+            const tooltip = document.getElementById('tooltip');
+
+            const margin = { top: 20, right: 30, bottom: 50, left: 50 };
+            const width = chart.clientWidth - margin.left - margin.right;
+            const height = chart.clientHeight - margin.top - margin.bottom;
+
+            const svg = d3.select(chart)
+                .append('svg')
+                .attr('width', width + margin.left + margin.right)
+                .attr('height', height + margin.top + margin.bottom)
+                .call(d3.zoom().on("zoom", function (event) {
+                    svg.attr("transform", event.transform);
+                }))
+                .append('g')
+                .attr('transform', `translate(${margin.left},${margin.top})`);
+
+            const x = d3.scaleLinear()
+                .domain(d3.extent(data, d => +d[xField]))
+                .range([0, width]);
+
+            const y = d3.scaleLinear()
+                .domain(d3.extent(data, d => +d[yField]))
+                .range([height, 0]);
+
+            svg.append('g')
+                .attr('transform', `translate(0,${height})`)
+                .call(d3.axisBottom(x).ticks(10))
+                .append('text')
+                .attr('x', width / 2)
+                .attr('y', margin.bottom - 10)
+                .attr('fill', '#333')
+                .style('font-size', '14px')
+                .style('text-anchor', 'middle')
+                .text(xField);
+
+            svg.append('g')
+                .call(d3.axisLeft(y).ticks(10))
+                .append('text')
+                .attr('transform', 'rotate(-90)')
+                .attr('x', -height / 2)
+                .attr('y', -margin.left + 20)
+                .attr('fill', '#333')
+                .style('font-size', '14px')
+                .style('text-anchor', 'middle')
+                .text(yField);
+
+            const color = d3.scaleOrdinal(d3.schemeCategory10);
+
+            const size = d3.scaleLinear()
+                .domain([0, d3.max(data, d => sizeField ? +d[sizeField] : 0)])
+                .range([5, 20]);
+
+            const opacity = d3.scaleLinear()
+                .domain([0, d3.max(data, d => opacityField ? +d[opacityField] : 1)])
+                .range([0.2, 1]);
+
+            svg.selectAll('circle')
+                .data(data)
+                .enter()
+                .append('circle')
+                .attr('cx', d => x(d[xField]))
+                .attr('cy', d => y(d[yField]))
+                .attr('r', d => sizeField ? size(d[sizeField]) : 10)
+                .attr('fill', d => colorField ? color(d[colorField]) : '#69b3a2')
+                .attr('opacity', d => opacityField ? opacity(d[opacityField]) : 0.7)
+                .attr('stroke', '#333')
+                .on('mouseover', function (event, d) {
+                    let tooltipContent = `${xField}: ${d[xField]}<br>${yField}: ${d[yField]}`;
+                    if (colorField) {
+                        tooltipContent += `<br>${colorField}: ${d[colorField]}`;
+                    }
+                    if (sizeField) {
+                        tooltipContent += `<br>${sizeField}: ${d[sizeField]}`;
+                    }
+                    if (opacityField) {
+                        tooltipContent += `<br>${opacityField}: ${d[opacityField]}`;
+                    }
+                    tooltip.style.opacity = 1;
+                    tooltip.innerHTML = tooltipContent;
+                })
+                .on('mousemove', function (event) {
+                    tooltip.style.left = (event.pageX + 10) + 'px';
+                    tooltip.style.top = (event.pageY - 25) + 'px';
+                })
+                .on('mouseout', function () {
+                    tooltip.style.opacity = 0;
+                });
+        }
+
+        function renderBarChart(data, xField, yField, colorField) {
+            const chart = document.getElementById('chart');
+            chart.innerHTML = '';
+            const tooltip = document.getElementById('tooltip');
+
+            const margin = { top: 20, right: 30, bottom: 50, left: 50 };
+            const width = chart.clientWidth - margin.left - margin.right;
+            const height = chart.clientHeight - margin.top - margin.bottom;
+
+            const svg = d3.select(chart)
+                .append('svg')
+                .attr('width', width + margin.left + margin.right)
+                .attr('height', height + margin.top + margin.bottom)
+                .append('g')
+                .attr('transform', `translate(${margin.left},${margin.top})`);
+
+            const x = d3.scaleBand()
+                .domain(data.map(d => d[xField]))
+                .range([0, width])
+                .padding(0.2);  // 调整条形之间的间距
+
+            const y = d3.scaleLinear()
+                .domain([0, d3.max(data, d => +d[yField])])
+                .nice()  // 使y轴更平滑
+                .range([height, 0]);
+
+            // 修改这里的代码，减少显示的x轴刻度数量
+            svg.append('g')
+                .attr('transform', `translate(0,${height})`)
+                .call(d3.axisBottom(x).tickValues(x.domain().filter(function (d, i) { return !(i % Math.ceil(data.length / 25)); })));
+
+            svg.append('g')
+                .call(d3.axisLeft(y));
+
+            svg.selectAll('.bar')
+                .data(data)
+                .enter()
+                .append('rect')
+                .attr('class', 'bar')
+                .attr('x', d => x(d[xField]))
+                .attr('y', d => y(d[yField]))
+                .attr('width', x.bandwidth())
+                .attr('height', d => height - y(d[yField]))
+                .attr('fill', d => colorField ? d3.scaleOrdinal(d3.schemeCategory10)(d[colorField]) : '#69b3a2')
+                .on('mouseover', function (event, d) {
+                    if (tooltip) {
+                        tooltip.style.opacity = 1;
+                        tooltip.innerHTML = `${xField}: ${d[xField]}<br>${yField}: ${d[yField]}`;
+                    }
+                    d3.select(this).attr('stroke', '#333').attr('stroke-width', 2);
+                })
+                .on('mousemove', function (event) {
+                    if (tooltip) {
+                        tooltip.style.left = (event.pageX + 10) + 'px';
+                        tooltip.style.top = (event.pageY - 25) + 'px';
+                    }
+                })
+                .on('mouseout', function () {
+                    if (tooltip) {
+                        tooltip.style.opacity = 0;
+                    }
+                    d3.select(this).attr('stroke', 'none');
+                });
+        }
+
+        function renderLineChart(data, xField, yField) {
+            const chart = document.getElementById('chart');
+            chart.innerHTML = '';
+            const tooltip = document.getElementById('tooltip');
+
+            const margin = { top: 20, right: 30, bottom: 50, left: 50 };
+            const width = chart.clientWidth - margin.left - margin.right;
+            const height = chart.clientHeight - margin.top - margin.bottom;
+
+            const svg = d3.select(chart)
+                .append('svg')
+                .attr('width', width + margin.left + margin.right)
+                .attr('height', height + margin.top + margin.bottom)
+                .call(d3.zoom().on("zoom", function (event) {
+                    svg.attr("transform", event.transform);
+                }))
+                .append('g')
+                .attr('transform', `translate(${margin.left},${margin.top})`);
+
+            const x = d3.scaleLinear()
+                .domain([0, data.length - 1])
+                .range([0, width]);
+
+            const yX = d3.scaleLinear()
+                .domain(d3.extent(data, d => +d[xField]))
+                .range([height, 0]);
+
+            const yY = d3.scaleLinear()
+                .domain(d3.extent(data, d => +d[yField]))
+                .range([height, 0]);
+
+            svg.append('g')
+                .attr('transform', `translate(0,${height})`)
+                .call(d3.axisBottom(x).ticks(data.length));
+
+            svg.append('g')
+                .call(d3.axisLeft(yX).ticks(10))
+                .append('text')
+                .attr('transform', 'rotate(-90)')
+                .attr('x', -height / 2)
+                .attr('y', -margin.left + 20)
+                .attr('fill', '#1f77b4')
+                .style('font-size', '14px')
+                .style('text-anchor', 'middle')
+                .text(xField);
+
+            svg.append('g')
+                .attr('transform', `translate(${width},0)`)
+                .call(d3.axisRight(yY).ticks(10))
+                .append('text')
+                .attr('transform', 'rotate(-90)')
+                .attr('x', -height / 2)
+                .attr('y', margin.right - 20)
+                .attr('fill', '#ff7f0e')
+                .style('font-size', '14px')
+                .style('text-anchor', 'middle')
+                .text(yField);
+
+            const lineX = d3.line()
+                .x((d, i) => x(i))
+                .y(d => yX(d[xField]))
+                .curve(d3.curveMonotoneX);  // 平滑折线
+
+            const lineY = d3.line()
+                .x((d, i) => x(i))
+                .y(d => yY(d[yField]))
+                .curve(d3.curveMonotoneX);  // 平滑折线
+
+            svg.append("path")
+                .datum(data)
+                .attr("fill", "none")
+                .attr("stroke", "#1f77b4")  // 选择一种颜色用于X轴折线
+                .attr("stroke-width", 2)
+                .attr("d", lineX);
+
+            svg.append("path")
+                .datum(data)
+                .attr("fill", "none")
+                .attr("stroke", "#ff7f0e")  // 选择一种颜色用于Y轴折线
+                .attr("stroke-width", 2)
+                .attr("d", lineY);
+
+            // 添加点到图表中
+            svg.selectAll('circle.x-point')
+                .data(data)
+                .enter()
+                .append('circle')
+                .attr('class', 'x-point')
+                .attr('cx', (d, i) => x(i))
+                .attr('cy', d => yX(d[xField]))
+                .attr('r', 4)
+                .attr('fill', '#1f77b4')
+                .on('mouseover', function (event, d) {
+                    tooltip.style.opacity = 1;
+                    tooltip.innerHTML = `${xField}: ${d[xField]}`;
+                    tooltip.style.left = (event.pageX + 10) + 'px';
+                    tooltip.style.top = (event.pageY - 25) + 'px';
+                })
+                .on('mousemove', function (event) {
+                    tooltip.style.left = (event.pageX + 10) + 'px';
+                    tooltip.style.top = (event.pageY - 25) + 'px';
+                })
+                .on('mouseout', function () {
+                    tooltip.style.opacity = 0;
+                });
+
+            svg.selectAll('circle.y-point')
+                .data(data)
+                .enter()
+                .append('circle')
+                .attr('class', 'y-point')
+                .attr('cx', (d, i) => x(i))
+                .attr('cy', d => yY(d[yField]))
+                .attr('r', 4)
+                .attr('fill', '#ff7f0e')
+                .on('mouseover', function (event, d) {
+                    tooltip.style.opacity = 1;
+                    tooltip.innerHTML = `${yField}: ${d[yField]}`;
+                    tooltip.style.left = (event.pageX + 10) + 'px';
+                    tooltip.style.top = (event.pageY - 25) + 'px';
+                })
+                .on('mousemove', function (event) {
+                    tooltip.style.left = (event.pageX + 10) + 'px';
+                    tooltip.style.top = (event.pageY - 25) + 'px';
+                })
+                .on('mouseout', function () {
+                    tooltip.style.opacity = 0;
+                });
+        }
+
+        function populateDataTable(data, xField, yField, colorField, sizeField, opacityField) {
+            const tableBody = document.querySelector("#data-table tbody");
+            tableBody.innerHTML = '';
+
+            data.forEach((d, i) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${i + 1}</td>
+                    <td>${d[xField]}</td>
+                    <td>${d[yField]}</td>
+                    <td>${colorField ? d[colorField] : '-'}</td>
+                    <td>${sizeField ? d[sizeField] : '-'}</td>
+                    <td>${opacityField ? d[opacityField] : '-'}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        function exportChart() {
+            const svg = document.querySelector("#chart svg");
+            const serializer = new XMLSerializer();
+            const source = serializer.serializeToString(svg);
+
+            const img = new Image();
+            const svgBlob = new Blob([source], { type: "image/svg+xml;charset=utf-8" });
+            const url = URL.createObjectURL(svgBlob);
+
+            img.onload = function () {
+                const canvas = document.createElement("canvas");
+                canvas.width = svg.clientWidth;
+                canvas.height = svg.clientHeight;
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(img, 0, 0);
+
+                URL.revokeObjectURL(url);
+                const imgURL = canvas.toDataURL("image/png");
+
+                const a = document.createElement("a");
+                a.href = imgURL;
+                a.download = "chart.png";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            };
+            img.src = url;
+        }
+
+        function toggleDataTable() {
+            const dataTableContainer = document.getElementById('data-table-container');
+            const toggleButton = document.querySelector('.toggle-table-button');
+            dataTableContainer.classList.toggle('active');
+            if (dataTableContainer.classList.contains('active')) {
+                toggleButton.innerText = '收起数据表';
+            } else {
+                toggleButton.innerText = '展开数据表';
+            }
+        }
+
+        var settingsButton = document.getElementById('settings-button');
+        var modal = document.getElementById('settings-modal');
+        var closeBtn = document.querySelector('.close');
+
+        settingsButton.addEventListener('click', function() {
+            modal.style.display = 'block';
+        });
+
+        closeBtn.addEventListener('click', function() {
+            modal.style.display = 'none';
+        });
+
+        window.addEventListener('click', function(event) {
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        });
+
+        var languageSelect = document.getElementById('language-select');
+        languageSelect.addEventListener('change', function() {
+            var selectedLanguage = languageSelect.value;
+            if (selectedLanguage === 'zh') {
+                document.documentElement.lang = 'zh-CN';
+                alert('语言已切换至中文');
+            } else if (selectedLanguage === 'en') {
+                document.documentElement.lang = 'en';
+                alert('Language switched to English');
+            }
+        });
+
+        var themeSelect = document.getElementById('theme-select');
+        themeSelect.addEventListener('change', function() {
+            var selectedTheme = themeSelect.value;
+            if (selectedTheme === 'light') {
+                document.documentElement.style.setProperty('--sidebar-bg', '#273c75');
+                document.documentElement.style.setProperty('--content-bg', '#ffffff');
+                document.documentElement.style.setProperty('--button-bg', '#273c75');
+                document.documentElement.style.setProperty('--table-header-bg', '#273c75');
+                document.documentElement.style.setProperty('--text-color', '#ffffff');
+                document.documentElement.style.setProperty('--body-bg', '#f4f4f9');
+            } else if (selectedTheme === 'dark') {
+                document.documentElement.style.setProperty('--sidebar-bg', '#111');
+                document.documentElement.style.setProperty('--content-bg', '#444');
+                document.documentElement.style.setProperty('--button-bg', '#111');
+                document.documentElement.style.setProperty('--table-header-bg', '#111');
+                document.documentElement.style.setProperty('--text-color', '#ffffff');
+                document.documentElement.style.setProperty('--body-bg', '#333');
+            }
+        });
+
+        var colorSelect = document.getElementById('color-select');
+        colorSelect.addEventListener('input', function() {
+            var selectedColor = colorSelect.value;
+            document.documentElement.style.setProperty('--sidebar-bg', selectedColor);
+            document.documentElement.style.setProperty('--button-bg', selectedColor);
+            document.documentElement.style.setProperty('--table-header-bg', selectedColor);
+            document.documentElement.style.setProperty('--upload-button-bg', selectedColor);
+            document.documentElement.style.setProperty('--search-button-bg', selectedColor);
+        });
+
+        document.getElementById('clear-cache').addEventListener('click', function() {
+            alert('缓存已清理');
+        });
+
+        document.getElementById('restore-defaults').addEventListener('click', function() {
+            alert('已恢复默认设置');
+            languageSelect.value = 'zh';
+            themeSelect.value = 'light';
+            colorSelect.value = '#273c75';
+            document.documentElement.style.setProperty('--sidebar-bg', '#273c75');
+            document.documentElement.style.setProperty('--content-bg', '#ffffff');
+            document.documentElement.style.setProperty('--button-bg', '#273c75');
+            document.documentElement.style.setProperty('--table-header-bg', '#273c75');
+            document.documentElement.style.setProperty('--text-color', '#ffffff');
+            document.documentElement.style.setProperty('--body-bg', '#f4f4f9');
+            document.documentElement.style.setProperty('--upload-button-bg', '#273c75');
+            document.documentElement.style.setProperty('--search-button-bg', '#273c75');
+        });
+
+        document.getElementById('view-account').addEventListener('click', function() {
+            alert('账号管理页面正在开发中...');
+        });
+
+        document.getElementById('logout').addEventListener('click', function() {
+            alert('您已成功退出登录');
+        });
+
+        document.getElementById('view-system-info').addEventListener('click', function() {
+            alert('系统版本: 1.0.0\n更新日志:\n- 添加新功能\n- 修复已知问题');
+        });
+
+    </script>
+</body>
+
+</html>
+
+
