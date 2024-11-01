@@ -192,26 +192,15 @@ document.getElementById('file-upload').addEventListener('change', function() {
     }
 });
 
-<<<<<<< HEAD
-// 检查文件上传状态并阻止跳转
-document.querySelectorAll('.sidebar a').forEach(link => {
-    link.addEventListener('click', function(event) {
-        if (!isFileUploaded) {
-=======
 document.querySelectorAll('.sidebar a').forEach(link => {
     link.addEventListener('click', function(event) {
         if (!isFileUploaded && this.id !== 'settings-button') {
->>>>>>> branch4
             event.preventDefault(); // 阻止默认跳转
             alert('请先上传文件，然后再跳转到其他页面。');
         }
     });
 });
 
-<<<<<<< HEAD
-=======
-
->>>>>>> branch4
 // 在页面加载时检查文件上传状态
 document.addEventListener('DOMContentLoaded', function() {
     fetch('/api/check-upload-status') // 假设后端有这个接口
@@ -377,8 +366,6 @@ document.addEventListener('DOMContentLoaded', function() {
         var settingsButton = document.getElementById('settings-button');
         var modal = document.getElementById('settings-modal');
         var closeBtn = document.querySelector('.close');
-<<<<<<< HEAD
-=======
         // 获取设置弹窗的关闭按钮
 var closeSettingsBtn = document.querySelector('#settings-modal .close');
 
@@ -386,7 +373,6 @@ var closeSettingsBtn = document.querySelector('#settings-modal .close');
 closeSettingsBtn.addEventListener('click', function() {
     modal.style.display = 'none';
 });
->>>>>>> branch4
 
         // 点击“设置”按钮，显示弹窗
         settingsButton.addEventListener('click', function() {
