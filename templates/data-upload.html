@@ -6,8 +6,6 @@
     <title>数据分析系统</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <link rel="stylesheet" href="static/css/global-style.css">
-<<<<<<< HEAD
-=======
     <style>
         .modal {
             display: none;
@@ -48,7 +46,6 @@
             border: none;
         }
     </style>
->>>>>>> 21047a66a (修改因果推断流程)
 </head>
 <body>
 <div class="container">
@@ -59,11 +56,6 @@
         <a href="statistical-analysis.html"><i class="fas fa-chart-bar"></i><span>统计分析</span></a>
         <a href="causal-analysis.html"><i class="fas fa-brain"></i><span>因果分析</span></a>
         <a href="big-model-analysis.html"><i class="fas fa-database"></i><span>大模型分析</span></a>
-<<<<<<< HEAD
-        <a href="favorites.html"><i class="fas fa-star"></i><span>收藏夹</span></a>
-        <!-- 设置按钮放置在左下角 -->
-        <a id="settings-button" href="javascript:void(0);"><i class="fas fa-cog"></i></a>
-=======
         <a href="index.html"><i class="fas fa-home"></i><span>返回主页</span></a>
         <div class="user-info" onclick="toggleDropdown()" onmouseleave="hideDropdown()">
             <img src="{{ url_for('static', filename='images/admin.png') }}" alt="User">
@@ -74,7 +66,6 @@
                 <a href="javascript:void(0);" onclick="openSettingsModal()" id="settings-button">设置</a>
             </div>
         </div>
->>>>>>> 21047a66a (修改因果推断流程)
     </div>
     <div class="content">
         <h1>数据上传</h1>
@@ -158,11 +149,7 @@
         var content = document.querySelector('.content');
         content.style.height = sidebar.offsetHeight + 'px';
 
-<<<<<<< HEAD
-        const rowsPerPage = 9;
-=======
         const rowsPerPage = 7;
->>>>>>> 21047a66a (修改因果推断流程)
         let currentPage = 1;
         let data = [];
 
@@ -176,8 +163,6 @@
             })
             .catch(error => console.error('Error fetching data:', error));
 
-<<<<<<< HEAD
-=======
         function setupPagination(data) {
             var pagination = document.getElementById('pagination');
             pagination.innerHTML = '';
@@ -200,7 +185,6 @@
         }
 
 
->>>>>>> 21047a66a (修改因果推断流程)
         function displayTable(data, page) {
             var tbody = document.getElementById('history-tbody');
             tbody.innerHTML = '';
@@ -256,34 +240,9 @@
                     });
                 });
             }
-<<<<<<< HEAD
-        }
-
-        function setupPagination(data) {
-            var pagination = document.getElementById('pagination');
-            pagination.innerHTML = '';
-            var pageCount = Math.ceil(data.length / rowsPerPage);
-
-            for (let i = 1; i <= pageCount; i++) {
-                var button = document.createElement('button');
-                button.textContent = i;
-                button.className = 'pagination-button';
-                if (i === currentPage) {
-                    button.disabled = true;
-                }
-                button.addEventListener('click', function() {
-                    currentPage = i;
-                    displayTable(data, currentPage);
-                    setupPagination(data);
-                });
-                pagination.appendChild(button);
-            }
-        }
-=======
             setupPagination(data);
         }
 
->>>>>>> 21047a66a (修改因果推断流程)
 
         // 搜索功能
         function searchTable() {
@@ -315,8 +274,6 @@
             }
         });
 
-<<<<<<< HEAD
-=======
         function toggleDropdown(event) {
             var dropdown = document.querySelector('.user-dropdown');
             dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
@@ -335,7 +292,6 @@
         });
 
 
->>>>>>> 21047a66a (修改因果推断流程)
         // 设置弹窗功能
         var settingsButton = document.getElementById('settings-button');
         var modal = document.getElementById('settings-modal');

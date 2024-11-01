@@ -199,11 +199,7 @@
     
         <!-- 上传区卡片 -->
         <div class="card">
-<<<<<<< HEAD
-            <form action="{{ url_for('causal_analysis_view') }}" method="post" enctype="multipart/form-data">
-=======
             <form action="{{ url_for('causal_analysis_view') }}" method="post" enctype="multipart/form-data" id="uploadForm">
->>>>>>> 21047a66a (修改因果推断流程)
                 <h2>上传文件</h2>
                 <div class="upload-row">
                     <div class="upload-section">
@@ -214,31 +210,6 @@
                         <input type="file" id="variable_file" name="variable_file" accept=".csv" onchange="showFileName('variable_file', 'variable_file_name')">
                         <div id="variable_file_name" class="file-name">支持格式:CSV</div>
                     </div>
-<<<<<<< HEAD
-    
-                    <div class="upload-section">
-                        <label for="data_file">数据文件:</label>
-                        <button type="button" class="upload-button" onclick="document.getElementById('data_file').click();">
-                            <i class="fas fa-file-upload"></i> 上传数据文件
-                        </button>
-                        <input type="file" id="data_file" name="data_file" accept=".csv" onchange="showFileName('data_file', 'data_file_name')">
-                        <div id="data_file_name" class="file-name">支持格式:CSV</div>
-                    </div>
-                </div>
-                <div class="upload-section">
-                    <label for="algorithm">选择算法:</label>
-                    <select name="algorithm" id="algorithm" class="upload-button">
-                        <option value="pc">PC算法</option>
-                        <option value="gies">GIES算法</option>
-                    </select>
-                </div>
-                <button type="submit" class="button">上传并分析</button>
-            </form>
-        </div>
-    
-        <!-- 分析结果卡片 -->
-        <div class="card result-card">
-=======
         
                     <div class="upload-section">
                         <label for="algorithm">选择算法:</label>
@@ -254,7 +225,6 @@
         
         <!-- 分析结果卡片 -->
         <div class="card result-card" id="resultCard" style="display: none;">
->>>>>>> 21047a66a (修改因果推断流程)
             <h2>分析结果</h2>
             <div class="result-content">
                 <!-- 左侧数据表 -->
@@ -266,31 +236,15 @@
                         <tbody id="tableBody"></tbody>
                     </table>
                 </div>
-<<<<<<< HEAD
-
-                <!-- 右侧可视化图 -->
-                <div id="graph-container"></div>
-            </div>
-        </div>
-=======
         
                 <!-- 右侧可视化图 -->
                 <div id="graph-container"></div>
             </div>
         </div>        
->>>>>>> 21047a66a (修改因果推断流程)
     </div>
 </div>
 
 <script>
-<<<<<<< HEAD
-    // 显示文件名函数
-    function showFileName(inputId, displayId) {
-        var input = document.getElementById(inputId);
-        var display = document.getElementById(displayId);
-        display.textContent = input.files.length > 0 ? '已选择文件: ' + input.files[0].name : '';
-    }
-=======
 
     function showFileName(inputId, displayId) {
         var input = document.getElementById(inputId);
@@ -298,7 +252,6 @@
         display.innerHTML = input.files[0].name;
     }
 
->>>>>>> 21047a66a (修改因果推断流程)
     // 渲染 CSV 表格
     function renderTable(csvData) {
         const tableHeaders = document.getElementById("tableHeaders");
@@ -408,11 +361,7 @@
         Plotly.newPlot('graph-container', data, layout);
     }
 
-<<<<<<< HEAD
-    // 自动加载并可视化数据
-=======
     // 获取分析结果并显示
->>>>>>> 21047a66a (修改因果推断流程)
     function fetchData() {
         fetch('/get-csv-data')
             .then(response => response.json())
@@ -428,12 +377,6 @@
             })
             .catch(error => console.error("获取数据时出错:", error));
     }
-<<<<<<< HEAD
-
-    // 页面加载时获取数据
-    document.addEventListener('DOMContentLoaded', fetchData);
-</script>
-=======
     let intervalId;
 
     function showResult() {
@@ -462,6 +405,5 @@
 
 </script>
 
->>>>>>> 21047a66a (修改因果推断流程)
 </body>
 </html>

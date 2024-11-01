@@ -365,8 +365,6 @@ def generate_chart():
     })
 
 
-<<<<<<< HEAD
-=======
 @app.route('/check-result', methods=['GET'])
 def check_result():
     output_file_path = os.path.join('static', 'result.csv')
@@ -375,7 +373,6 @@ def check_result():
     else:
         return jsonify({"ready": False})
 
->>>>>>> 21047a66a (修改因果推断流程)
 
 @app.route('/causal-analysis.html', methods=['GET', 'POST'])
 def causal_analysis_view():
@@ -383,19 +380,6 @@ def causal_analysis_view():
     output_file_path = os.path.join('static', 'result.csv')
 
     if request.method == 'POST':
-<<<<<<< HEAD
-        variable_file = request.files['variable_file']
-        data_file = request.files['data_file']
-        algorithm = request.form.get('algorithm')  # 获取用户选择的算法
-
-        if variable_file and data_file:
-            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-            variable_file_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{timestamp}_{variable_file.filename}")
-            data_file_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{timestamp}_{data_file.filename}")
-
-            variable_file.save(variable_file_path)
-            data_file.save(data_file_path)
-=======
         # 从会话中获取已上传的 data_file 路径
         data_file_path = session.get('preparation_filepath')
         
@@ -414,7 +398,6 @@ def causal_analysis_view():
             timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
             variable_file_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{timestamp}_{variable_file.filename}")
             variable_file.save(variable_file_path)
->>>>>>> 21047a66a (修改因果推断流程)
 
             # 根据选择的算法运行不同的脚本
             if algorithm == 'pc':
@@ -424,29 +407,17 @@ def causal_analysis_view():
                     capture_output=True, text=True
                 )
             elif algorithm == 'gies':
-<<<<<<< HEAD
-                
-                script_path = 'GIES算法/mymain.py'  # 更新为GIES算法的路径
-=======
                 script_path = 'GIES算法/mymain.py'
->>>>>>> 21047a66a (修改因果推断流程)
                 result = subprocess.run(
                     ['python', script_path, '--variable_file', variable_file_path, '--data_file', data_file_path, '--output_file', output_file_path],
                     capture_output=True, text=True
                 )
-<<<<<<< HEAD
-=======
-
->>>>>>> 21047a66a (修改因果推断流程)
             print(result.stdout)
             if result.returncode != 0:
                 error_message = f"因果分析失败: {result.stderr}"
                 return render_template('causal-analysis.html', error_message=error_message), 500
-<<<<<<< HEAD
-=======
 
             # 检查结果文件是否生成
->>>>>>> 21047a66a (修改因果推断流程)
             if os.path.exists(output_file_path):
                 df = pd.read_csv(output_file_path)
                 csv_data = df.to_dict(orient='records')
@@ -456,19 +427,13 @@ def causal_analysis_view():
 
             return render_template('causal-analysis.html', csv_data=csv_data)
 
-<<<<<<< HEAD
-=======
     # 如果是 GET 请求，不加载结果数据
->>>>>>> 21047a66a (修改因果推断流程)
     return render_template('causal-analysis.html', csv_data=csv_data)
 
 
 
-<<<<<<< HEAD
-=======
 
 
->>>>>>> 21047a66a (修改因果推断流程)
 @app.route('/get-csv-data', methods=['GET'])
 def get_csv_data():
     output_file_path = os.path.join('static', 'result.csv')
