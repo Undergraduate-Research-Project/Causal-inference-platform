@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据准备</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" href="static/css/global-style.css">
+    <style>
+        .button-bar {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            margin-bottom: 30px;
+            gap: 15px;
+        }
+
+        .button-bar .button {
+            background-color: #273c75;
+            color: #ffffff;
+            border-radius: 6px;
+            cursor: pointer;
+            padding: 12px 20px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .button-bar .button i {
+            margin-right: 8px;
+            font-size: 18px;
+        }
+
+        .button-bar .button:hover {
+            background-color: #1e2b52;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #fff;
+            min-width: 220px;
+            box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.15);
+            z-index: 1;
+            border-radius: 10px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            border: 1px solid #d1d1d1;
+        }
+
+        .dropdown-content a, 
+        .dropdown-content form {
+            color: #333;
+            padding: 14px 20px;
+            text-decoration: none;
+            display: block;
+            transition: background-color 0.3s ease, padding-left 0.3s;
+            font-size: 16px;
+            font-weight: 500;
+            background-color: #f8f8f8;
+        }
+
+        .dropdown-content a:hover, 
+        .dropdown-content form:hover {
+            background-color: #f0f0f0;
+            padding-left: 25px;
+            color: #273c75;
+        }
+
+        .dropdown:hover .dropdown-content {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .button {
+            background-color: #273c75;
+            color: #fff;
+            border-radius: 8px;
+            cursor: pointer;
+            padding: 12px 20px;
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+        }
+
+        .button i {
+            margin-right: 10px;
+            font-size: 18px;
+        }
+
+        .button:hover {
+            background-color: #1e2b52;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .chart-block {
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            border-radius: 12px;
+            background-color: #fff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            border-top: 5px solid #3c59ab;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .chart-block:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-container {
+            flex-grow: 1;
+            max-width: 40%;
+        }
+
+        .chart-container canvas {
+            width: 100%;
+            height: 250px;
+        }
+
+        .chart-header h2 {
+            margin: 0;
+            font-size: 24px;
+            color: #333;
+        }
+
+        .chart-header p1 {
+            margin: 0;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .chart-details {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+            gap: 15px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            text-align: center;
+        }
+
+        .data-type-container,
+        .filter-container,
+        .use-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            flex-basis: 30%;
+            padding-left: 15px;
+            padding-bottom: 30px;
+        }
+
+        .data-type-container,
+        .filter-container {
+            border-right: 1px solid #ddd;
+            padding-right: 10px;
+        }
+
+        .filter-container {
+            padding-left: 10px;
+        }
+
+        .data-type-container h3::before,
+        .filter-container h3::before,
+        .use-container h3::before {
+            content: "\f02c";
+            font-family: "Font Awesome 5 Free";
+            font-weight: 900;
+            margin-right: 10px;
+            color: #2b4e64;
+        }
+
+        .data-type-container h3,
+        .filter-container h3,
+        .use-container h3 {
+            font-size: 22px;
+            color: #333;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+
+        .data-type-container label,
+        .filter-container label,
+        .use-container label {
+            font-size: 20px;
+            margin-bottom: 12px;
+            display: flex;
+            margin-left: 0.6cm;
+            align-items: center;
+        }
+
+        .filter-container input[type="text"] {
+            width: 80px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 16px;
+            margin-left: 10px;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .filter-container input[type="text"]:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+
+        .data-type-container label input[type="radio"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+        }
+
+        .data-type-container label input[type="radio"]:checked::before {
+            content: '';
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #101830;
+            position: relative;
+            left: 5px;
+            top: 5px;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #334f64;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .switch-label {
+            display: flex;
+            align-items: center;
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            margin-top: 12px;
+        }
+
+        .filter-container button {
+            padding: 12px 20px;
+            background-color: #273c75;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+            margin-left: 0.3cm;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .filter-container button:hover {
+            background-color: #1e2b52;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            position: relative;
+            margin: auto;
+            padding: 20px;
+            width: 80%;
+            max-width: 600px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .close {
+            position: absolute;
+            right: 20px;
+            top: 10px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            cursor: pointer;
+        }
+
+        #settings-iframe {
+            width: 100%;
+            height: 500px;
+            border: none;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<<body onload="loadCharts()">
+    <div class="container">
+        <div class="sidebar">
+            <h2>菜单</h2>
+            <a href="data-upload.html"><i class="fas fa-upload"></i><span>数据上传</span></a>
+            <a href="data-preparation.html"><i class="fas fa-cogs"></i><span>数据准备</span></a>
+            <a href="statistical-analysis.html"><i class="fas fa-chart-bar"></i><span>统计分析</span></a>
+            <a href="causal-analysis.html"><i class="fas fa-brain"></i><span>因果分析</span></a>
+            <a href="big-model-analysis.html"><i class="fas fa-database"></i><span>大模型分析</span></a>
+            <a href="index.html"><i class="fas fa-home"></i><span>返回主页</span></a>
+            <div class="user-info" onclick="toggleDropdown()" onmouseleave="hideDropdown()">
+                <img src="{{ url_for('static', filename='images/admin.png') }}" alt="User">
+                <span>用户名</span>
+                <div class="user-dropdown">
+                    <a href="profile.html">个人信息</a>
+                    <a href="logout.html">退出系统</a>
+                    <a href="javascript:void(0);" onclick="openSettingsModal()" id="settings-button">设置</a>
+                </div>
+            </div>
+        </div>
+        <div class="content">
+            <div class="header">
+                <h1>数据准备</h1>
+            </div>
+
+            <div class="button-bar">
+                <div class="dropdown">
+                    <button class="button"><i class="fas fa-broom"></i>清洗方法</button>
+                    <div class="dropdown-content">
+                        <form action="{{ url_for('data_preparation') }}" method="post">
+                            <div class="form-group">
+                                <label for="fill_na">填充缺失值:</label>
+                                <select name="fill_na" id="fill_na">
+                                    <option value="None">不填充</option>
+                                    <option value="mean">平均值</option>
+                                    <option value="median">中位数</option>
+                                    <option value="mode">众数</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="drop_na">
+                                    <input type="checkbox" name="drop_na" id="drop_na" checked> 删除所有缺失行
+                                </label>
+                            </div>
+                            <button type="submit" name="action" value="prepare_data">应用清洗</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="dropdown">
+                    <button class="button"><i class="fas fa-filter"></i>全局数据筛选</button>
+                    <div class="dropdown-content">
+                        <form action="{{ url_for('data_preparation') }}" method="post">
+                            <div class="form-group">
+                                <label for="global_quantile_low">输入下分位数:</label>
+                                <input type="text" name="global_quantile_low" id="global_quantile_low" placeholder="0.0 - 1.0"
+                                    value="{{ session.get('global_quantile_low', 0.0) }}">
+                            </div>
+                            <div class="form-group">
+                                <label for="global_quantile_high">输入上分位数:</label>
+                                <input type="text" name="global_quantile_high" id="global_quantile_high" placeholder="0.0 - 1.0"
+                                    value="{{ session.get('global_quantile_high', 1.0) }}">
+                            </div>
+                            <button type="submit" name="action" value="global_filter_data">应用全局筛选</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="dropdown">
+                    <button class="button"><i class="fas fa-download"></i>导出数据</button>
+                    <div class="dropdown-content">
+                        <a href="{{ url_for('download', filename='prepared_'+session.get('uploaded_filename').split('/')[-1]) }}">导出CSV</a>
+                        <a href="{{ url_for('download', filename='filtered_'+session.get('uploaded_filename').split('/')[-1]) }}">导出Excel</a>
+                    </div>
+                </div>
+                <button class="button" onclick="location.href='statistical-analysis.html'">
+                    <i class="fas fa-chart-bar"></i>统计分析
+                </button>
+            </div>
+
+            <div id="charts-container" class="charts-container">
+                {% for column in columns %}
+                <div class="chart-block">
+                    <div class="chart-header">
+                        <div>
+                            <h2>{{ column }}</h2>
+                            <p1>Column ID: {{ column }}</p1>
+                        </div>
+                    </div>
+                    <div class="chart-details">
+                        <div class="chart-container">
+                            <canvas id="chart-{{ loop.index }}"></canvas>
+                        </div> 
+                        <div class="data-type-container">
+                            <h3>数据类型</h3>
+                            <label>
+                                <input type="radio" name="data_type_{{ column }}" value="categorical"
+                                    {% if column_types[column] == 'categorical' %}checked{% endif %}> 类别类型
+                            </label>
+                            <label>
+                                <input type="radio" name="data_type_{{ column }}" value="ordinal"
+                                    {% if column_types[column] == 'ordinal' %}checked{% endif %}> 有序类型
+                            </label>
+                            <label>
+                                <input type="radio" name="data_type_{{ column }}" value="datetime"
+                                    {% if column_types[column] == 'datetime' %}checked{% endif %}> 时间类型
+                            </label>
+                            <label>
+                                <input type="radio" name="data_type_{{ column }}" value="numeric"
+                                    {% if column_types[column] == 'numeric' %}checked{% endif %}> 数值类型
+                            </label>
+                            <label>
+                                <input type="radio" name="data_type_{{ column }}" value="text"
+                                    {% if column_types[column] == 'text' %}checked{% endif %}> 文本类型
+                            </label>
+                        </div>
+                        <div class="filter-container">
+                            <h3>筛选范围</h3>
+                            <form action="{{ url_for('data_preparation') }}" method="post">
+                                <input type="hidden" name="filter_column" value="{{ column }}">
+                                <div class="form-group">
+                                    <label for="quantile_low_{{ column }}">下分位数:</label>
+                                    <input type="text" name="quantile_low_{{ column }}" id="quantile_low_{{ column }}"
+                                        placeholder="0.0 - 1.0" value="{{ session.get('quantile_low_' + column, 0.0) }}">
+                                </div>
+                                <div class="form-group">
+                                    <label for="quantile_high_{{ column }}">上分位数:</label>
+                                    <input type="text" name="quantile_high_{{ column }}" id="quantile_high_{{ column }}"
+                                        placeholder="0.0 - 1.0" value="{{ session.get('quantile_high_' + column, 1.0) }}">
+                                </div>
+                                <button type="submit" name="action" value="filter_data_column">应用筛选</button>
+                            </form>
+                        </div>
+                        <div class="use-container">
+                            <h3>是否使用该列</h3>
+                            <label class="switch">
+                                <input type="checkbox" name="use_in_analysis_{{ column }}" id="use_in_analysis_{{ column }}"
+                                    {% if session.get('use_' + column, True) %}checked{% endif %} onchange="updateUseColumn('{{ column }}', this.checked)">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeSettingsModal()">&times;</span>
+            <h2>设置</h2>
+            <div class="modal-body">
+                <div class="setting-option">
+                    <label for="language-select">语言切换:</label>
+                    <select id="language-select">
+                        <option value="zh">中文</option>
+                        <option value="en">English</option>
+                    </select>
+                </div>
+                <div class="setting-option">
+                    <label for="theme-select">主题颜色:</label>
+                    <select id="theme-select">
+                        <option value="light">浅色模式</option>
+                        <option value="dark">深色模式</option>
+                    </select>
+                </div>
+                <div class="setting-option">
+                    <label for="color-select">主色调:</label>
+                    <input type="color" id="color-select" value="#273c75">
+                </div>
+                <div class="setting-option">
+                    <button id="clear-cache">清理缓存</button>
+                    <button id="restore-defaults">恢复默认</button>
+                </div>
+                <div class="setting-option">
+                    <button id="view-account">账号管理</button>
+                    <button id="logout">退出登录</button>
+                </div>
+                <div class="setting-option">
+                    <button id="view-system-info">系统信息</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 你的 JavaScript 代码
+        
+        document.addEventListener('click', function (event) {
+            var userButton = document.querySelector('.user-info');
+
+            if (!userButton.contains(event.target)) {
+                userDropdown.style.display = 'none';
+            }
+        });
+        function updateUseColumn(column, isChecked) {
+            fetch('/update_use_column', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ column: column, use: isChecked })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log(`Column ${column} updated to ${isChecked}`);
+                } else {
+                    console.error('Failed to update column status:', data.message);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+        function toggleDropdown() {
+            var dropdown = document.querySelector('.user-dropdown');
+            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function hideDropdown() {
+            var dropdown = document.querySelector('.user-dropdown');
+            dropdown.style.display = 'none';
+        }
+        function selectFile(filename) {
+            fetch('/set_session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ filename: filename }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Session updated with new file');
+                    loadCharts();
+                } else {
+                    console.error('Failed to update session:', data.message);
+                }
+            });
+        }
+        function loadCharts() {
+            var analysisTypes = JSON.parse('{{ analysis_types | tojson | safe }}');
+            var columns = JSON.parse('{{ columns | tojson | safe }}');
+            
+            columns.forEach(function (column, index) {
+                fetch(`/api/plot-data?column=${column}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        var ctx = document.getElementById(`chart-${index + 1}`).getContext('2d');
+                        var chartType = analysisTypes[column] === '度量' ? 'line' : 'bar';
+                        new Chart(ctx, {
+                            type: chartType,
+                            data: {
+                                labels: data.labels,
+                                datasets: [{
+                                    label: column,
+                                    data: data.values,
+                                    backgroundColor: chartType === 'line' ? 'rgba(39, 60, 117,0.8)' : 'rgba(39, 60, 117,0.8)',
+                                    borderColor: 'rgba(39, 60, 117,0.8)',
+                                    borderWidth: 1,
+                                    fill: chartType === 'line' ? true : false,
+                                    tension: chartType === 'line' ? 0.5 : 0,
+
+                                    pointRadius: 0.1,
+                                    pointHoverRadius: 7,
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                scales: {
+                                    y: {
+                                        beginAtZero: true
+                                    }
+                                }
+                            }
+                        });
+                    });
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var settingsIframe = document.getElementById('settings-iframe');
+
+            window.openSettingsModal = function() {
+                settingsIframe.style.display = 'block';
+            };
+
+            window.addEventListener('click', function(event) {
+                if (event.target === settingsIframe) {
+                    settingsIframe.style.display = 'none';
+                }
+            });
+        });
+
+        var settingsButton = document.getElementById('settings-button');
+        var modal = document.getElementById('settings-modal');
+        var closeBtn = document.querySelector('.close');
+
+        settingsButton.addEventListener('click', function() {
+            modal.style.display = 'block';
+        });
+
+        closeBtn.addEventListener('click', function() {
+            modal.style.display = 'none';
+        });
+
+        window.addEventListener('click', function(event) {
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        });
+
+        var languageSelect = document.getElementById('language-select');
+        languageSelect.addEventListener('change', function() {
+            var selectedLanguage = languageSelect.value;
+            if (selectedLanguage === 'zh') {
+                document.documentElement.lang = 'zh-CN';
+                alert('语言已切换至中文');
+            } else if (selectedLanguage === 'en') {
+                document.documentElement.lang = 'en';
+                alert('Language switched to English');
+            }
+        });
+
+        var themeSelect = document.getElementById('theme-select');
+        themeSelect.addEventListener('change', function() {
+            var selectedTheme = themeSelect.value;
+            if (selectedTheme === 'light') {
+                document.documentElement.style.setProperty('--sidebar-bg', '#273c75');
+                document.documentElement.style.setProperty('--content-bg', '#ffffff');
+                document.documentElement.style.setProperty('--button-bg', '#273c75');
+                document.documentElement.style.setProperty('--table-header-bg', '#273c75');
+                document.documentElement.style.setProperty('--text-color', '#ffffff');
+                document.documentElement.style.setProperty('--body-bg', '#f4f4f9');
+            } else if (selectedTheme === 'dark') {
+                document.documentElement.style.setProperty('--sidebar-bg', '#111');
+                document.documentElement.style.setProperty('--content-bg', '#444');
+                document.documentElement.style.setProperty('--button-bg', '#111');
+                document.documentElement.style.setProperty('--table-header-bg', '#111');
+                document.documentElement.style.setProperty('--text-color', '#ffffff');
+                document.documentElement.style.setProperty('--body-bg', '#333');
+            }
+        });
+
+        var colorSelect = document.getElementById('color-select');
+        colorSelect.addEventListener('input', function() {
+            var selectedColor = colorSelect.value;
+            document.documentElement.style.setProperty('--sidebar-bg', selectedColor);
+            document.documentElement.style.setProperty('--button-bg', selectedColor);
+            document.documentElement.style.setProperty('--table-header-bg', selectedColor);
+            document.documentElement.style.setProperty('--upload-button-bg', selectedColor);
+            document.documentElement.style.setProperty('--search-button-bg', selectedColor);
+        });
+
+        document.getElementById('clear-cache').addEventListener('click', function() {
+            alert('缓存已清理');
+        });
+
+        document.getElementById('restore-defaults').addEventListener('click', function() {
+            alert('已恢复默认设置');
+            languageSelect.value = 'zh';
+            themeSelect.value = 'light';
+            colorSelect.value = '#273c75';
+            document.documentElement.style.setProperty('--sidebar-bg', '#273c75');
+            document.documentElement.style.setProperty('--content-bg', '#ffffff');
+            document.documentElement.style.setProperty('--button-bg', '#273c75');
+            document.documentElement.style.setProperty('--table-header-bg', '#273c75');
+            document.documentElement.style.setProperty('--text-color', '#ffffff');
+            document.documentElement.style.setProperty('--body-bg', '#f4f4f9');
+            document.documentElement.style.setProperty('--upload-button-bg', '#273c75');
+            document.documentElement.style.setProperty('--search-button-bg', '#273c75');
+        });
+
+        document.getElementById('view-account').addEventListener('click', function() {
+            alert('账号管理页面正在开发中...');
+        });
+
+        document.getElementById('logout').addEventListener('click', function() {
+            alert('您已成功退出登录');
+        });
+
+        document.getElementById('view-system-info').addEventListener('click', function() {
+            alert('系统版本: 1.0.0\n更新日志:\n- 添加新功能\n- 修复已知问题');
+        });
+        
+    </script>
+</body>
+</html>
+
+
+
