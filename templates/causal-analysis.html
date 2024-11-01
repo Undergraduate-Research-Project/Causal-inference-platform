@@ -199,7 +199,7 @@
     
         <!-- 上传区卡片 -->
         <div class="card">
-            <form action="{{ url_for('causal_analysis_view') }}" method="post" enctype="multipart/form-data" id="uploadForm">
+            <form enctype="multipart/form-data" id="uploadForm" onsubmit="startAnalysis(event)">
                 <h2>上传文件</h2>
                 <div class="upload-row">
                     <div class="upload-section">
@@ -219,7 +219,7 @@
                         </select>
                     </div>
                 </div>
-                <button type="submit" class="button" onclick="showResult()">上传并分析</button>
+                <button type="submit" class="button" id="analyzeButton">上传并分析</button>
             </form>
         </div>
         
@@ -247,8 +247,8 @@
 <script>
 
     function showFileName(inputId, displayId) {
-        var input = document.getElementById(inputId);
-        var display = document.getElementById(displayId);
+        const input = document.getElementById(inputId);
+        const display = document.getElementById(displayId);
         display.innerHTML = input.files[0].name;
     }
 
@@ -257,11 +257,9 @@
         const tableHeaders = document.getElementById("tableHeaders");
         const tableBody = document.getElementById("tableBody");
 
-        // 清空现有内容
         tableHeaders.innerHTML = '';
         tableBody.innerHTML = '';
 
-        // 添加表头
         if (csvData.length > 0) {
             Object.keys(csvData[0]).forEach(col => {
                 const th = document.createElement("th");
@@ -270,7 +268,6 @@
             });
         }
 
-        // 添加表格数据
         csvData.forEach(row => {
             const tr = document.createElement("tr");
             Object.values(row).forEach(value => {
@@ -324,30 +321,7 @@
             textposition: 'bottom center'
         };
 
-        const arrowTraces = edges.map(edge => {
-            const end = nodePositions[edge.target];
-            const arrowX = end.x * 0.9;
-            const arrowY = end.y * 0.9;
-            const arrowZ = end.z * 0.9;
-
-            return {
-                type: 'scatter3d',
-                mode: 'markers',
-                x: [arrowX],
-                y: [arrowY],
-                z: [arrowZ],
-                marker: {
-                    size: 6,
-                    color: '#888',
-                    symbol: 'triangle-up',
-                    opacity: 1
-                },
-                showlegend: false,
-                hoverinfo: 'skip'
-            };
-        });
-
-        const data = [...edgeTraces, nodeTrace, ...arrowTraces];
+        const data = [...edgeTraces, nodeTrace];
         const layout = {
             title: '三维有向图展示',
             scene: {
@@ -366,43 +340,74 @@
         fetch('/get-csv-data')
             .then(response => response.json())
             .then(data => {
-                console.log("Data received:", data); // 调试日志
+                console.log("Data received:", data);
                 if (data.error) {
                     alert(data.error);
                 } else {
                     renderTable(data.csv_data);
                     renderGraph(data.nodes, data.edges);
-                    document.getElementById("csvTableContainer").style.display = "block"; // 默认展开表格
+                    document.getElementById("resultCard").style.display = "block";
                 }
             })
             .catch(error => console.error("获取数据时出错:", error));
     }
+
     let intervalId;
 
-    function showResult() {
-        // 开始轮询
-        intervalId = setInterval(checkResultReady, 10000); // 每隔5秒检查一次
+    // 启动分析过程
+    function startAnalysis(event) {
+        event.preventDefault();
+        console.log("开始分析流程");
+
+        const uploadButton = document.getElementById('analyzeButton');
+        uploadButton.disabled = true;
+        uploadButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 分析中...';
+
+        const formData = new FormData(document.getElementById('uploadForm'));
+
+        console.log("发送请求到 /causal-analysis.html");
+
+        fetch('/causal-analysis.html', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            console.log("收到响应:", response.status);
+            return response.text();
+        })
+        .then(html => {
+            document.body.innerHTML = html;
+            intervalId = setInterval(checkAnalysisStatus, 5000);
+        })
+        .catch(error => {
+            console.error("启动分析时出错:", error);
+            resetButton();
+        });
     }
 
-    // 检查服务器是否已生成结果
-    function checkResultReady() {
-        fetch('/check-result')  // 新增一个接口用于检查结果是否已生成
+    // 检查分析状态
+    function checkAnalysisStatus() {
+        fetch('/check-analysis-status')
             .then(response => response.json())
             .then(data => {
-                if (data.ready) {  // 服务器返回ready表示分析完成
-                    clearInterval(intervalId);  // 停止轮询
-                    document.getElementById("resultCard").style.display = "block";  // 显示结果卡片
-                    fetchData();  // 获取并展示数据
+                if (data.completed) {
+                    clearInterval(intervalId);
+                    resetButton();
+                    fetchData();
                 }
             })
             .catch(error => {
-                console.error("检查结果时出错:", error);
-                clearInterval(intervalId);  // 如果出错也停止轮询
+                console.error("检查分析状态时出错:", error);
+                clearInterval(intervalId);
             });
     }
 
-    // 渲染数据表格和三维图表的fetchData函数保持不变
-
+    // 恢复按钮到初始状态
+    function resetButton() {
+        const uploadButton = document.getElementById('analyzeButton');
+        uploadButton.disabled = false;
+        uploadButton.innerHTML = '<i class="fas fa-file-upload"></i> 上传并分析';
+    }
 </script>
 
 </body>

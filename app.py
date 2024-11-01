@@ -365,71 +365,89 @@ def generate_chart():
     })
 
 
-@app.route('/check-result', methods=['GET'])
-def check_result():
-    output_file_path = os.path.join('static', 'result.csv')
-    if os.path.exists(output_file_path):
-        return jsonify({"ready": True})
+
+
+
+# 检查分析状态的路由
+@app.route('/check-analysis-status', methods=['GET'])
+def check_analysis_status():
+    flag_file_path = "in_progress.flag"
+    if os.path.exists(flag_file_path):
+        return jsonify({"completed": False})
     else:
-        return jsonify({"ready": False})
+        return jsonify({"completed": True})
 
-
+# 因果分析的主路由
 @app.route('/causal-analysis.html', methods=['GET', 'POST'])
 def causal_analysis_view():
     csv_data = []
     output_file_path = os.path.join('static', 'result.csv')
 
     if request.method == 'POST':
-        # 从会话中获取已上传的 data_file 路径
+        # 从会话中获取数据文件路径
         data_file_path = session.get('preparation_filepath')
-        
-        # 调试：打印 data_file_path 确认是否成功沿用
         print(f"Using data file path from session: {data_file_path}")
         
         if not data_file_path:
             error_message = "数据文件未找到，请先上传并准备数据文件。"
             return render_template('causal-analysis.html', error_message=error_message), 400
 
-        # 变量文件需要上传
+        # 获取变量文件
         variable_file = request.files.get('variable_file')
         algorithm = request.form.get('algorithm')
 
         if variable_file:
+            # 保存变量文件
             timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
             variable_file_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{timestamp}_{variable_file.filename}")
             variable_file.save(variable_file_path)
 
-            # 根据选择的算法运行不同的脚本
-            if algorithm == 'pc':
-                script_path = 'PC算法/main4.py'
-                result = subprocess.run(
-                    ['python', script_path, '--variable_file', variable_file_path, '--data_file', data_file_path, '--output_file', output_file_path],
-                    capture_output=True, text=True
-                )
-            elif algorithm == 'gies':
-                script_path = 'GIES算法/mymain.py'
-                result = subprocess.run(
-                    ['python', script_path, '--variable_file', variable_file_path, '--data_file', data_file_path, '--output_file', output_file_path],
-                    capture_output=True, text=True
-                )
-            print(result.stdout)
-            if result.returncode != 0:
-                error_message = f"因果分析失败: {result.stderr}"
-                return render_template('causal-analysis.html', error_message=error_message), 500
+            # 创建标志文件，表示分析开始
+            flag_file_path = "in_progress.flag"
+            with open(flag_file_path, 'w') as f:
+                f.write("Analysis in progress")
 
-            # 检查结果文件是否生成
-            if os.path.exists(output_file_path):
-                df = pd.read_csv(output_file_path)
-                csv_data = df.to_dict(orient='records')
-            else:
-                error_message = "生成的结果文件不存在。"
-                return render_template('causal-analysis.html', error_message=error_message), 500
+            # 启动分析任务
+            try:
+                if algorithm == 'pc':
+                    script_path = 'PC算法/main4.py'
+                    result = subprocess.run(
+                        ['python', script_path, '--variable_file', variable_file_path, '--data_file', data_file_path, '--output_file', output_file_path],
+                        capture_output=True, text=True
+                    )
+                elif algorithm == 'gies':
+                    script_path = 'GIES算法/mymain.py'
+                    result = subprocess.run(
+                        ['python', script_path, '--variable_file', variable_file_path, '--data_file', data_file_path, '--output_file', output_file_path],
+                        capture_output=True, text=True
+                    )
+
+                # 打印调试输出
+                print(result.stdout)
+
+                # 检查返回状态
+                if result.returncode != 0:
+                    error_message = f"因果分析失败: {result.stderr}"
+                    return render_template('causal-analysis.html', error_message=error_message), 500
+
+                # 检查结果文件是否生成
+                if os.path.exists(output_file_path):
+                    df = pd.read_csv(output_file_path)
+                    csv_data = df.to_dict(orient='records')
+                else:
+                    error_message = "生成的结果文件不存在。"
+                    return render_template('causal-analysis.html', error_message=error_message), 500
+
+            finally:
+                # 删除标志文件，表示分析完成
+                if os.path.exists(flag_file_path):
+                    os.remove(flag_file_path)
+                print("Analysis completed, flag file removed.")
 
             return render_template('causal-analysis.html', csv_data=csv_data)
 
-    # 如果是 GET 请求，不加载结果数据
+    # GET 请求时返回空的结果
     return render_template('causal-analysis.html', csv_data=csv_data)
-
 
 
 
