@@ -1,0 +1,7 @@
+﻿Node1,Node2,Endpoint1,Endpoint2
+Diameter,Length,TAIL,ARROW
+Length,Shucked weight,TAIL,ARROW
+Viscera weight,Length,TAIL,ARROW
+Diameter,Shell weight,TAIL,ARROW
+Shell weight,Shucked weight,TAIL,ARROW
+Shucked weight,Viscera weight,TAIL,ARROW
