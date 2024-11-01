@@ -251,7 +251,10 @@
             <a href="data-preparation.html"><i class="fas fa-cogs"></i><span>数据准备</span></a>
             <a href="statistical-analysis.html"><i class="fas fa-chart-bar"></i><span>统计分析</span></a>
             <a href="causal-analysis.html"><i class="fas fa-brain"></i><span>因果分析</span></a>
+<<<<<<< HEAD
             <a href="{{ url_for('visualize_csv') }}"><i class="fas fa-eye"></i><span>可视化 CSV</span></a> 
+=======
+>>>>>>> 21047a66a (修改因果推断流程)
             <a href="big-model-analysis.html"><i class="fas fa-database"></i><span>大模型分析</span></a>
             <a href="favorites.html"><i class="fas fa-star"></i><span>收藏夹</span></a>
             <div class="user-info" onclick="toggleDropdown()" onmouseleave="hideDropdown()">
@@ -301,6 +304,13 @@
                     <button id="bar-button" onclick="setChartType('bar')">条形图</button>
                     <button id="line-button" onclick="setChartType('line')">折线图</button>
                     <button class="export-button" onclick="exportChart()">导出图表</button>
+<<<<<<< HEAD
+=======
+
+                    <button id="causal-button" onclick="location.href='causal-analysis.html'">
+                        <i class="fas fa-brain"></i> 因果分析
+                    </button>
+>>>>>>> 21047a66a (修改因果推断流程)
                 </div>
                 <div id="chart">
                     <div class="tooltip" id="tooltip"></div>

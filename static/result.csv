@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 Node1,Node2,Endpoint1,Endpoint2
 Rings,Shell weight,TAIL,ARROW
 Rings,Diameter,TAIL,ARROW
@@ -20,3 +21,9 @@ Whole weight,Shell weight,TAIL,ARROW
 Whole weight,Shucked weight,TAIL,ARROW
 Whole weight,Viscera weight,TAIL,ARROW
 Shucked weight,Viscera weight,TAIL,ARROW
+=======
+﻿Node1,Node2,Endpoint1,Endpoint2
+altitude,temperature,TAIL,ARROW
+altitude,precipitation,TAIL,ARROW
+altitude,sunshine,TAIL,ARROW
+>>>>>>> 21047a66a (修改因果推断流程)
