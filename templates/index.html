@@ -33,11 +33,11 @@
         <div class="sidebar">
             <h2>菜单</h2>
             <a href="data-upload.html"><i class="fas fa-upload"></i><span>数据上传</span></a>
-            <a href="data-preparation.html"><i class="fas fa-cogs"></i><span>数据准备</span></a>
-            <a href="statistical-analysis.html"><i class="fas fa-chart-bar"></i><span>统计分析</span></a>
-            <a href="causal-analysis.html"><i class="fas fa-brain"></i><span>因果分析</span></a>
-            <a href="big-model-analysis.html"><i class="fas fa-database"></i><span>大模型分析</span></a>
-            <a href="favorites.html"><i class="fas fa-star"></i><span>收藏夹</span></a>
+            <a href="data-preparation.html" class="restricted"><i class="fas fa-cogs"></i><span>数据准备</span></a>
+            <a href="statistical-analysis.html" class="restricted"><i class="fas fa-chart-bar"></i><span>统计分析</span></a>
+            <a href="causal-analysis.html" class="restricted"><i class="fas fa-brain"></i><span>因果分析</span></a>
+            <a href="big-model-analysis.html" class="restricted"><i class="fas fa-database"></i><span>大模型分析</span></a>
+            <a href="favorites.html" class="restricted"><i class="fas fa-star"></i><span>收藏夹</span></a>
             <div class="user-info" onclick="toggleDropdown()" onmouseleave="hideDropdown()">
                 <img src="{{ url_for('static', filename='images/admin.png') }}" alt="User">
                 <span>用户名</span>
@@ -55,12 +55,23 @@
 
     <script>
         var userDropdown = document.querySelector('.user-dropdown');
+        var isDataUploaded = false; // 状态变量，代表数据是否已上传
+
+        // 添加点击事件处理函数
+        document.querySelectorAll('.restricted').forEach(function(link) {
+            link.addEventListener('click', function(event) {
+                if (!isDataUploaded) {
+                    event.preventDefault(); // 阻止链接的默认行为
+                    alert('请先上传文件！'); // 弹窗提示
+                }
+            });
+        });
 
         document.addEventListener('click', function(event) {
             var userButton = document.querySelector('.user-info');
 
             if (!userButton.contains(event.target)) {
-                userDropdown.style.display = 'none';
+                hideDropdown();
             }
         });
 
@@ -73,6 +84,7 @@
             var dropdown = document.querySelector('.user-dropdown');
             dropdown.style.display = 'none';
         }
+        
     </script>
 </body>
 </html>

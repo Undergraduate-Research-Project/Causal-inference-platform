@@ -406,6 +406,8 @@ def causal_analysis_view():
 
         if variable_file:
             # 保存变量文件
+            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+            variable_file_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{timestamp}_{variable_file.filename}")
             variable_file.save(variable_file_path)
 
             # 创建标志文件，表示分析开始
