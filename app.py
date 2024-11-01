@@ -35,19 +35,27 @@ def index():
 def upload_file():
     if request.method == 'POST':
         if 'file' not in request.files:
-            return redirect(request.url)
+            return jsonify(success=False, message='没有文件被上传'), 400
+        
         file = request.files['file']
         if file.filename == '':
-            return redirect(request.url)
+            return jsonify(success=False, message='没有选择文件'), 400
+        
         if file:
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
             try:
                 file.save(filepath)
+                session['uploaded_filename'] = filepath
+                return jsonify(success=True, message='文件上传成功')
             except PermissionError as e:
-                return f"Permission Error: {e}", 500
-            session['uploaded_filename'] = filepath
-            return redirect(url_for('data_preparation'))
+                return jsonify(success=False, message=f"权限错误: {e}"), 500
+
     return render_template('data-upload.html')
+
+@app.route('/api/check-upload-status', methods=['GET'])
+def check_upload_status():
+    file_uploaded = 'uploaded_filename' in session
+    return jsonify(fileUploaded=file_uploaded)
 
 @app.route('/api/upload-history', methods=['GET'])
 def upload_history():
@@ -398,8 +406,6 @@ def causal_analysis_view():
 
         if variable_file:
             # 保存变量文件
-            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-            variable_file_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{timestamp}_{variable_file.filename}")
             variable_file.save(variable_file_path)
 
             # 创建标志文件，表示分析开始

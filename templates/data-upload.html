@@ -45,6 +45,14 @@
             height: 500px;
             border: none;
         }
+        .modal-content {
+    transition: all 0.3s ease;
+    border-radius: 10px;
+    padding: 30px; /* 增加内边距 */
+    background-color: #f9f9f9; /* 更改背景色 */
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); /* 更明显的阴影 */
+}
+
     </style>
 </head>
 <body>
@@ -67,6 +75,15 @@
             </div>
         </div>
     </div>
+    <div id="upload-warning-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeUploadWarning()">&times;</span>
+            <h2>提示</h2>
+            <p>请先上传文件，然后再跳转到其他页面。</p>
+            <button onclick="closeUploadWarning()">确定</button>
+        </div>
+    </div>
+    
     <div class="content">
         <h1>数据上传</h1>
 
@@ -144,12 +161,66 @@
 </div>
 
 <script>
+
+let isFileUploaded = false; // 文件上传状态标记
+
+document.getElementById('file-upload').addEventListener('change', function() {
+    var file = this.files[0];
+    if (file) {
+        var confirmed = confirm('是否上传所选文件？');
+        if (confirmed) {
+            // 提交表单并处理响应
+            var formData = new FormData(document.getElementById('upload-form'));
+            fetch('{{ url_for('upload_file') }}', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    isFileUploaded = true; // 设置文件已上传状态
+                    alert('文件上传成功！');
+                } else {
+                    alert('文件上传失败：' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('上传出错:', error);
+                alert('文件上传失败，请重试。');
+            });
+        }
+    }
+});
+
+// 检查文件上传状态并阻止跳转
+document.querySelectorAll('.sidebar a').forEach(link => {
+    link.addEventListener('click', function(event) {
+        if (!isFileUploaded) {
+            event.preventDefault(); // 阻止默认跳转
+            alert('请先上传文件，然后再跳转到其他页面。');
+        }
+    });
+});
+
+// 在页面加载时检查文件上传状态
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('/api/check-upload-status') // 假设后端有这个接口
+        .then(response => response.json())
+        .then(data => {
+            if (data.fileUploaded) {
+                isFileUploaded = true; // 根据后端响应设置状态
+            }
+        })
+        .catch(error => console.error('检查上传状态出错:', error));
+});
+
+
     document.addEventListener('DOMContentLoaded', function() {
         var sidebar = document.querySelector('.sidebar');
         var content = document.querySelector('.content');
         content.style.height = sidebar.offsetHeight + 'px';
 
-        const rowsPerPage = 7;
+        const rowsPerPage = 10;
         let currentPage = 1;
         let data = [];
 
