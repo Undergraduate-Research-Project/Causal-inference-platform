@@ -1,4 +1,9 @@
 ﻿Node1,Node2,Endpoint1,Endpoint2
-altitude,temperature,TAIL,ARROW
-altitude,precipitation,TAIL,ARROW
-altitude,sunshine,TAIL,ARROW
+Height,Rings,TAIL,ARROW
+Shell weight,Length,TAIL,ARROW
+Diameter,Length,TAIL,ARROW
+Viscera weight,Length,TAIL,ARROW
+Shell weight,Diameter,TAIL,ARROW
+Viscera weight,Height,TAIL,ARROW
+Shucked weight,Whole weight,TAIL,ARROW
+Shucked weight,Viscera weight,TAIL,ARROW
