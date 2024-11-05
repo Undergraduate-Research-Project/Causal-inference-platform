@@ -299,6 +299,9 @@
                     <button id="scatter-button" class="active" onclick="setChartType('scatter')">散点图</button>
                     <button id="bar-button" onclick="setChartType('bar')">条形图</button>
                     <button id="line-button" onclick="setChartType('line')">折线图</button>
+                    <button id="boxplot-button" onclick="setChartType('boxplot')">盒图</button>
+                    <button id="pixel-button" onclick="setChartType('pixel')">像素图</button>
+
                     <button class="export-button" onclick="exportChart()">导出图表</button>
 
                     <button id="causal-button" onclick="location.href='causal-analysis.html'">
@@ -307,7 +310,13 @@
                 </div>
                 <div id="chart">
                     <div class="tooltip" id="tooltip"></div>
+                    
+
+
                     生成的图表将显示在这里
+                </div>
+                <div id="chart-explanation" style="margin-top: 20px; font-size: 14px; color: #333;">
+                    <!-- 生成的解释内容将插入到这里 -->
                 </div>
                 <button class="toggle-table-button" onclick="toggleDataTable()">展开数据表</button>
                 <div class="data-table-container" id="data-table-container">
@@ -491,18 +500,166 @@
 
         function setChartType(type) {
             chartType = type;
+
+            // 移除所有按钮的活动状态
             document.getElementById('scatter-button').classList.remove('active');
             document.getElementById('bar-button').classList.remove('active');
             document.getElementById('line-button').classList.remove('active');
+            document.getElementById('boxplot-button').classList.remove('active');
+            document.getElementById('pixel-button').classList.remove('active');
 
+            // 设置当前选中按钮为活跃状态
             if (type === 'scatter') {
                 document.getElementById('scatter-button').classList.add('active');
             } else if (type === 'bar') {
                 document.getElementById('bar-button').classList.add('active');
             } else if (type === 'line') {
                 document.getElementById('line-button').classList.add('active');
+            } else if (type === 'boxplot') {
+                document.getElementById('boxplot-button').classList.add('active');
+            } else if (type === 'pixel') {
+                document.getElementById('pixel-button').classList.add('active');
             }
+
+            generateChart();
         }
+
+
+        function renderBoxPlotChart(data, xField, yField) {
+            const chart = document.getElementById('chart');
+            chart.innerHTML = '';
+            
+            const margin = { top: 20, right: 30, bottom: 50, left: 50 };
+            const width = chart.clientWidth - margin.left - margin.right;
+            const height = chart.clientHeight - margin.top - margin.bottom;
+
+            const svg = d3.select(chart)
+                .append('svg')
+                .attr('width', width + margin.left + margin.right)
+                .attr('height', height + margin.top + margin.bottom)
+                .append('g')
+                .attr('transform', `translate(${margin.left},${margin.top})`);
+
+            // 计算五数概括
+            const groupedData = d3.groups(data, d => d[xField]);
+            const boxData = groupedData.map(([key, values]) => {
+                const sorted = values.map(d => +d[yField]).sort(d3.ascending);
+                const q1 = d3.quantile(sorted, 0.25);
+                const median = d3.quantile(sorted, 0.5);
+                const q3 = d3.quantile(sorted, 0.75);
+                const iqr = q3 - q1;
+                const min = d3.min(sorted);
+                const max = d3.max(sorted);
+
+                return { key, min, q1, median, q3, max };
+            });
+
+            // 设定比例尺
+            const x = d3.scaleBand()
+                .domain(boxData.map(d => d.key))
+                .range([0, width])
+                .padding(0.2);
+
+            const y = d3.scaleLinear()
+                .domain([d3.min(boxData, d => d.min), d3.max(boxData, d => d.max)])
+                .range([height, 0]);
+
+            // 绘制X轴
+            svg.append('g')
+                .attr('transform', `translate(0,${height})`)
+                .call(d3.axisBottom(x).tickSize(0))
+                .selectAll("text")
+                .style("text-anchor", "end")
+                .attr("dx", "-0.8em")
+                .attr("dy", "0.15em")
+                .attr("transform", "rotate(-45)");
+
+            // 绘制Y轴
+            svg.append('g')
+                .call(d3.axisLeft(y).ticks(10));
+
+            // 绘制盒图
+            svg.selectAll('.box')
+                .data(boxData)
+                .enter()
+                .append('rect')
+                .attr('x', d => x(d.key))
+                .attr('y', d => y(d.q3))
+                .attr('height', d => y(d.q1) - y(d.q3))
+                .attr('width', x.bandwidth() * 0.6)
+                .attr('fill', "#90C978")
+                .attr('stroke', "black")
+                .attr('stroke-width', 1);
+
+            // 中位数线
+            svg.selectAll('.median-line')
+                .data(boxData)
+                .enter()
+                .append('line')
+                .attr('x1', d => x(d.key))
+                .attr('x2', d => x(d.key) + x.bandwidth() * 0.6)
+                .attr('y1', d => y(d.median))
+                .attr('y2', d => y(d.median))
+                .attr('stroke', 'black')
+                .attr('stroke-width', 1.5);
+
+            // 绘制胡须（最小值和最大值）
+            svg.selectAll('.whisker-min')
+                .data(boxData)
+                .enter()
+                .append('line')
+                .attr('x1', d => x(d.key) + x.bandwidth() * 0.3)
+                .attr('x2', d => x(d.key) + x.bandwidth() * 0.3)
+                .attr('y1', d => y(d.min))
+                .attr('y2', d => y(d.q1))
+                .attr('stroke', 'black')
+                .attr('stroke-width', 1);
+
+            svg.selectAll('.whisker-max')
+                .data(boxData)
+                .enter()
+                .append('line')
+                .attr('x1', d => x(d.key) + x.bandwidth() * 0.3)
+                .attr('x2', d => x(d.key) + x.bandwidth() * 0.3)
+                .attr('y1', d => y(d.max))
+                .attr('y2', d => y(d.q3))
+                .attr('stroke', 'black')
+                .attr('stroke-width', 1);
+
+            // 绘制最小值和最大值的短横线
+            svg.selectAll('.min-line')
+                .data(boxData)
+                .enter()
+                .append('line')
+                .attr('x1', d => x(d.key) + x.bandwidth() * 0.2)
+                .attr('x2', d => x(d.key) + x.bandwidth() * 0.4)
+                .attr('y1', d => y(d.min))
+                .attr('y2', d => y(d.min))
+                .attr('stroke', 'black')
+                .attr('stroke-width', 1);
+
+            svg.selectAll('.max-line')
+                .data(boxData)
+                .enter()
+                .append('line')
+                .attr('x1', d => x(d.key) + x.bandwidth() * 0.2)
+                .attr('x2', d => x(d.key) + x.bandwidth() * 0.4)
+                .attr('y1', d => y(d.max))
+                .attr('y2', d => y(d.max))
+                .attr('stroke', 'black')
+                .attr('stroke-width', 1);
+
+            // 生成解释内容
+            let explanation = "<h3>盒图结果解释</h3>";
+            boxData.forEach(d => {
+                explanation += `<p><strong>${d.key}:</strong> 最小值=${d.min}, 第一四分位数(Q1)=${d.q1}, 中位数=${d.median}, 第三四分位数(Q3)=${d.q3}, 最大值=${d.max}.</p>`;
+            });
+
+            // 在界面上显示解释内容
+            document.getElementById('chart-explanation').innerHTML = explanation;
+        }
+
+
 
         function generateChart() {
             if (!dropData.x && !dropData.y) {
@@ -517,27 +674,85 @@
                 },
                 body: JSON.stringify({ ...dropData, chartType })
             })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        alert(data.error);
-                        return;
-                    }
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
 
-                    if (chartType === 'line') {
-                        renderLineChart(data.plot_data, data.x_axis, data.y_axis);
-                    } else if (chartType === 'scatter') {
-                        renderScatterChart(data.plot_data, data.x_axis, data.y_axis, data.color, data.size, data.opacity);
-                    } else if (chartType === 'bar') {
-                        renderBarChart(data.plot_data, data.x_axis, data.y_axis, data.color);
-                    }
-                    populateDataTable(data.plot_data, data.x_axis, data.y_axis, data.color, data.size, data.opacity);
-                    const dataTableContainer = document.getElementById('data-table-container');
-                    dataTableContainer.classList.remove('active');
-                    document.querySelector('.toggle-table-button').innerText = '展开数据表';
-                })
-                .catch(error => console.error('Error:', error));
+                if (chartType === 'line') {
+                    renderLineChart(data.plot_data, data.x_axis, data.y_axis);
+                } else if (chartType === 'scatter') {
+                    renderScatterChart(data.plot_data, data.x_axis, data.y_axis, data.color, data.size, data.opacity);
+                } else if (chartType === 'bar') {
+                    renderBarChart(data.plot_data, data.x_axis, data.y_axis, data.color);
+                } else if (chartType === 'boxplot') {
+                    renderBoxPlotChart(data.plot_data, data.x_axis, data.y_axis);
+                } else if (chartType === 'pixel') {
+                    // 选择维度并绘制像素图
+                    const selectedDimensions = [data.x_axis, data.y_axis]; // 替换为实际选择的维度
+                    renderPixelVisualization(data.plot_data, selectedDimensions);
+                }
+
+                // 显示数据表
+                populateDataTable(data.plot_data, data.x_axis, data.y_axis, data.color, data.size, data.opacity);
+                const dataTableContainer = document.getElementById('data-table-container');
+                dataTableContainer.classList.remove('active');
+                document.querySelector('.toggle-table-button').innerText = '展开数据表';
+            })
+            .catch(error => console.error('Error:', error));
         }
+
+        function renderPixelVisualization(data, dimensions) {
+            const container = document.getElementById('chart');
+            container.innerHTML = ''; // 清空已有的内容
+
+            // 设置每个矩阵的大小和像素格尺寸
+            const numRows = 10; // 每个矩阵行数
+            const numCols = 10; // 每个矩阵列数
+            const pixelSize = 10; // 每个像素格的大小
+
+            dimensions.forEach(dimension => {
+                // 为每个维度创建一个单独的容器
+                const dimensionContainer = document.createElement('div');
+                dimensionContainer.style.display = 'grid';
+                dimensionContainer.style.gridTemplateRows = `repeat(${numRows}, ${pixelSize}px)`;
+                dimensionContainer.style.gridTemplateColumns = `repeat(${numCols}, ${pixelSize}px)`;
+                dimensionContainer.style.border = '1px solid #ccc';
+                dimensionContainer.style.margin = '10px';
+                dimensionContainer.style.width = `${numCols * pixelSize}px`;
+                dimensionContainer.style.height = `${numRows * pixelSize}px`;
+
+                // 计算该维度数据的最小值和最大值，用于颜色映射
+                const values = data.map(d => d[dimension]);
+                const minValue = Math.min(...values);
+                const maxValue = Math.max(...values);
+
+                // 创建像素格子，并根据值设置颜色
+                values.slice(0, numRows * numCols).forEach(value => {
+                    const pixel = document.createElement('div');
+                    const intensity = (value - minValue) / (maxValue - minValue); // 归一化
+                    const colorValue = 255 - Math.round(intensity * 255);
+                    pixel.style.width = `${pixelSize}px`;
+                    pixel.style.height = `${pixelSize}px`;
+                    pixel.style.backgroundColor = `rgb(${colorValue},${colorValue},${colorValue})`;
+                    dimensionContainer.appendChild(pixel);
+                });
+
+                // 添加标题
+                const title = document.createElement('div');
+                title.innerText = dimension;
+                title.style.textAlign = 'center';
+                title.style.fontSize = '14px';
+                title.style.marginTop = '5px';
+
+                container.appendChild(dimensionContainer);
+                container.appendChild(title);
+            });
+        }
+
+
 
         function clearSelection(axis) {
             dropData[axis] = null;
@@ -638,70 +853,54 @@
                 });
         }
 
-        function renderBarChart(data, xField, yField, colorField) {
-            const chart = document.getElementById('chart');
-            chart.innerHTML = '';
-            const tooltip = document.getElementById('tooltip');
+        function renderPixelVisualization(data, dimensions) {
+            const container = document.getElementById('chart'); // 使用相同的容器
+            container.innerHTML = ''; // 清空已有内容
 
-            const margin = { top: 20, right: 30, bottom: 50, left: 50 };
-            const width = chart.clientWidth - margin.left - margin.right;
-            const height = chart.clientHeight - margin.top - margin.bottom;
+            // 设置每个矩阵的大小和像素格尺寸
+            const numRows = 20; // 增加行数以提升清晰度
+            const numCols = 10; // 增加列数
+            const pixelSize = 10; // 减小每个像素格的大小
 
-            const svg = d3.select(chart)
-                .append('svg')
-                .attr('width', width + margin.left + margin.right)
-                .attr('height', height + margin.top + margin.bottom)
-                .append('g')
-                .attr('transform', `translate(${margin.left},${margin.top})`);
+            dimensions.forEach(dimension => {
+                // 为每个维度创建一个单独的容器
+                const dimensionContainer = document.createElement('div');
+                dimensionContainer.style.display = 'grid';
+                dimensionContainer.style.gridTemplateRows = `repeat(${numRows}, ${pixelSize}px)`;
+                dimensionContainer.style.gridTemplateColumns = `repeat(${numCols}, ${pixelSize}px)`;
+                dimensionContainer.style.border = '1px solid #ccc';
+                dimensionContainer.style.margin = '10px';
+                dimensionContainer.style.width = `${numCols * pixelSize}px`;
+                dimensionContainer.style.height = `${numRows * pixelSize}px`;
 
-            const x = d3.scaleBand()
-                .domain(data.map(d => d[xField]))
-                .range([0, width])
-                .padding(0.2);  // 调整条形之间的间距
+                // 计算该维度数据的最小值和最大值，用于颜色映射
+                const values = data.map(d => d[dimension]);
+                const minValue = Math.min(...values);
+                const maxValue = Math.max(...values);
 
-            const y = d3.scaleLinear()
-                .domain([0, d3.max(data, d => +d[yField])])
-                .nice()  // 使y轴更平滑
-                .range([height, 0]);
-
-            // 修改这里的代码，减少显示的x轴刻度数量
-            svg.append('g')
-                .attr('transform', `translate(0,${height})`)
-                .call(d3.axisBottom(x).tickValues(x.domain().filter(function (d, i) { return !(i % Math.ceil(data.length / 25)); })));
-
-            svg.append('g')
-                .call(d3.axisLeft(y));
-
-            svg.selectAll('.bar')
-                .data(data)
-                .enter()
-                .append('rect')
-                .attr('class', 'bar')
-                .attr('x', d => x(d[xField]))
-                .attr('y', d => y(d[yField]))
-                .attr('width', x.bandwidth())
-                .attr('height', d => height - y(d[yField]))
-                .attr('fill', d => colorField ? d3.scaleOrdinal(d3.schemeCategory10)(d[colorField]) : '#69b3a2')
-                .on('mouseover', function (event, d) {
-                    if (tooltip) {
-                        tooltip.style.opacity = 1;
-                        tooltip.innerHTML = `${xField}: ${d[xField]}<br>${yField}: ${d[yField]}`;
-                    }
-                    d3.select(this).attr('stroke', '#333').attr('stroke-width', 2);
-                })
-                .on('mousemove', function (event) {
-                    if (tooltip) {
-                        tooltip.style.left = (event.pageX + 10) + 'px';
-                        tooltip.style.top = (event.pageY - 25) + 'px';
-                    }
-                })
-                .on('mouseout', function () {
-                    if (tooltip) {
-                        tooltip.style.opacity = 0;
-                    }
-                    d3.select(this).attr('stroke', 'none');
+                // 创建像素格子，并根据值设置颜色
+                values.slice(0, numRows * numCols).forEach(value => {
+                    const pixel = document.createElement('div');
+                    const intensity = (value - minValue) / (maxValue - minValue); // 归一化
+                    const colorValue = 255 - Math.round(intensity * 255); // 灰度值从白（255）到黑（0）
+                    pixel.style.width = `${pixelSize}px`;
+                    pixel.style.height = `${pixelSize}px`;
+                    pixel.style.backgroundColor = `rgb(${colorValue},${colorValue},${colorValue})`; // 灰度颜色
+                    dimensionContainer.appendChild(pixel);
                 });
+
+                // 添加标题
+                const title = document.createElement('div');
+                title.innerText = dimension;
+                title.style.textAlign = 'center';
+                title.style.fontSize = '14px';
+                title.style.marginTop = '5px';
+
+                container.appendChild(dimensionContainer);
+                container.appendChild(title);
+            });
         }
+
 
         function renderLineChart(data, xField, yField) {
             const chart = document.getElementById('chart');

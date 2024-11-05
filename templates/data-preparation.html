@@ -356,11 +356,19 @@
             height: 500px;
             border: none;
         }
+
+        .scrollable-checkbox-container {
+            max-height: 150px; /* 设置最大高度 */
+            overflow-y: auto; /* 超出时添加垂直滚动条 */
+            border: 1px solid #ddd; /* 可选，给列表添加边框 */
+            padding: 10px; /* 可选，内边距 */
+            margin-top: 10px; /* 给滚动条容器一些额外的间距 */
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
-<<body onload="loadCharts()">
+<body onload="loadCharts()">
     <div class="container">
         <div class="sidebar">
             <h2>菜单</h2>
@@ -480,16 +488,32 @@
                             <h3>筛选范围</h3>
                             <form action="{{ url_for('data_preparation') }}" method="post">
                                 <input type="hidden" name="filter_column" value="{{ column }}">
-                                <div class="form-group">
-                                    <label for="quantile_low_{{ column }}">下分位数:</label>
-                                    <input type="text" name="quantile_low_{{ column }}" id="quantile_low_{{ column }}"
-                                        placeholder="0.0 - 1.0" value="{{ session.get('quantile_low_' + column, 0.0) }}">
-                                </div>
-                                <div class="form-group">
-                                    <label for="quantile_high_{{ column }}">上分位数:</label>
-                                    <input type="text" name="quantile_high_{{ column }}" id="quantile_high_{{ column }}"
-                                        placeholder="0.0 - 1.0" value="{{ session.get('quantile_high_' + column, 1.0) }}">
-                                </div>
+                                {% if analysis_types[column] == '度量' %}
+                                    <div class="form-group">
+                                        <label for="quantile_low_{{ column }}">下分位数:</label>
+                                        <input type="text" name="quantile_low_{{ column }}" id="quantile_low_{{ column }}"
+                                            placeholder="0.0 - 1.0" value="{{ session.get('quantile_low_' + column, 0.0) }}">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="quantile_high_{{ column }}">上分位数:</label>
+                                        <input type="text" name="quantile_high_{{ column }}" id="quantile_high_{{ column }}"
+                                            placeholder="0.0 - 1.0" value="{{ session.get('quantile_high_' + column, 1.0) }}">
+                                    </div>
+                                {% elif analysis_types[column] == '维度' %}
+                                    <div class="form-group">
+                                        <label>选择值:</label>
+                                        <!-- 滚动条容器 -->
+                                        <div class="scrollable-checkbox-container">
+                                            {% for value in unique_values[column] %}
+                                                <div>
+                                                    <input type="checkbox" name="selected_values_{{ column }}" value="{{ value }}"
+                                                        {% if value in session.get('selected_values_' + column, unique_values[column]) %}checked{% endif %}>
+                                                    {{ value }}
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                {% endif %}
                                 <button type="submit" name="action" value="filter_data_column">应用筛选</button>
                             </form>
                         </div>

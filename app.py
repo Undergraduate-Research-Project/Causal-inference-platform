@@ -202,6 +202,7 @@ def data_preparation():
     columns = []
     column_types = {}
     analysis_types = {}
+    unique_values = {}
 
     filepath = session.get('uploaded_filename')
     if not filepath:
@@ -213,7 +214,13 @@ def data_preparation():
     
     column_types = detect_column_types(df)
     analysis_types = detect_analysis_types(df)
-
+    # 获取每个“维度”列的唯一值
+    for column in columns:
+        if analysis_types.get(column) == '维度':
+            unique_values[column] = df[column].unique().tolist()
+            if f'selected_values_{column}' not in session:
+                session[f'selected_values_{column}'] = unique_values[column]
+    
     if 'preparation_filepath' not in session or not session['preparation_filepath']:
         session['preparation_filepath'] = filepath
 
@@ -244,24 +251,25 @@ def data_preparation():
         action = request.form.get('action')
 
         if action == 'global_filter_data':
-            # 全局筛选逻辑
             global_quantile_low = float(request.form.get('global_quantile_low', 0))
             global_quantile_high = float(request.form.get('global_quantile_high', 1))
-            
+
             # 更新会话中的全局分位数
             session['global_quantile_low'] = global_quantile_low
             session['global_quantile_high'] = global_quantile_high
             
-            # 遍历每一列，并设置全局分位数
             for column in df.columns:
-                quantile_low_value = df[column].quantile(global_quantile_low)
-                quantile_high_value = df[column].quantile(global_quantile_high)
-                
-                df = df[(df[column] >= quantile_low_value) & (df[column] <= quantile_high_value)]
-                
-                # 更新每列的分位数信息到 session
-                session[f'quantile_low_{column}'] = global_quantile_low
-                session[f'quantile_high_{column}'] = global_quantile_high
+                # 检查该列是否为“度量”类型
+                if analysis_types.get(column) == '度量':  # 仅对“度量”列执行分位数筛选
+                    quantile_low_value = df[column].quantile(global_quantile_low)
+                    quantile_high_value = df[column].quantile(global_quantile_high)
+                    df = df[(df[column] >= quantile_low_value) & (df[column] <= quantile_high_value)]
+                    
+                    # 更新每列的分位数信息到 session
+                    session[f'quantile_low_{column}'] = global_quantile_low
+                    session[f'quantile_high_{column}'] = global_quantile_high
+                elif analysis_types.get(column) == '维度':
+                    session[f'selected_values_{column}'] = unique_values[column]
 
             # 保存过滤后的数据
             filtered_filepath = os.path.join(app.config['UPLOAD_FOLDER'], f'filtered_{os.path.basename(filepath)}')
@@ -272,27 +280,51 @@ def data_preparation():
         elif action == 'filter_data_column':
             # 按列筛选逻辑
             filter_column = request.form.get('filter_column')
-            quantile_low = float(request.form.get(f'quantile_low_{filter_column}', 0))
-            quantile_high = float(request.form.get(f'quantile_high_{filter_column}', 1))
+            analysis_type = analysis_types.get(filter_column)
+            if analysis_type == "度量":
+                quantile_low = float(request.form.get(f'quantile_low_{filter_column}', 0))
+                quantile_high = float(request.form.get(f'quantile_high_{filter_column}', 1))
             
-            # 更新单列的分位数到 session
-            session[f'quantile_low_{filter_column}'] = quantile_low
-            session[f'quantile_high_{filter_column}'] = quantile_high
+                # 更新单列的分位数到 session
+                session[f'quantile_low_{filter_column}'] = quantile_low
+                session[f'quantile_high_{filter_column}'] = quantile_high
 
-            for column in df.columns:
-                quantile_low = session.get(f'quantile_low_{column}', 0.0)
-                quantile_high = session.get(f'quantile_high_{column}', 1.0)
-                if column and 0 <= quantile_low <= 1 and 0 <= quantile_high <= 1 and quantile_low < quantile_high:
-                
-                    low_value = df[column].quantile(quantile_low)
-                    high_value = df[column].quantile(quantile_high)
-                    df = df[(df[column] >= low_value) & (df[column] <= high_value)]
-                
+                for column in df.columns:
+                    if analysis_types.get(column) == '度量':  # 仅对“度量”列执行分位数筛选
+                        quantile_low = session.get(f'quantile_low_{column}', 0.0)
+                        quantile_high = session.get(f'quantile_high_{column}', 1.0)
+                        if column and 0 <= quantile_low <= 1 and 0 <= quantile_high <= 1 and quantile_low < quantile_high:
+                    
+                            low_value = df[column].quantile(quantile_low)
+                            high_value = df[column].quantile(quantile_high)
+                            df = df[(df[column] >= low_value) & (df[column] <= high_value)]
+                    elif analysis_types.get(column) == '维度':
+                        selected_values = session.get(f'selected_values_{column}', [])
+                        df = df[df[column].isin(selected_values)]
+            elif analysis_type == '维度':  # 对维度类型进行复选框筛选
+                selected_values = request.form.getlist(f'selected_values_{filter_column}')  # 获取用户选择的值
+
+                session[f'selected_values_{filter_column}'] = selected_values
+                for column in df.columns:
+                    if analysis_types.get(column) == '度量':  # 仅对“度量”列执行分位数筛选
+                        quantile_low = session.get(f'quantile_low_{column}', 0.0)
+                        quantile_high = session.get(f'quantile_high_{column}', 1.0)
+                        if column and 0 <= quantile_low <= 1 and 0 <= quantile_high <= 1 and quantile_low < quantile_high:
+                    
+                            low_value = df[column].quantile(quantile_low)
+                            high_value = df[column].quantile(quantile_high)
+                            df = df[(df[column] >= low_value) & (df[column] <= high_value)]
+                    elif analysis_types.get(column) == '维度':
+                        selected_values = session.get(f'selected_values_{column}', [])
+                        df = df[df[column].isin(selected_values)]
+            
             filtered_filepath = os.path.join(app.config['UPLOAD_FOLDER'],
-                                             f'filtered_{filter_column}_{os.path.basename(filepath)}')
+                                            f'filtered_{filter_column}_{os.path.basename(filepath)}')
             df.to_csv(filtered_filepath, index=False)
             session['preparation_filepath'] = filtered_filepath
             message = f"{filter_column} 列数据筛选成功！"
+
+            
         elif action == 'use_column':
     # 更新是否使用该列的逻辑
             for column in columns:
@@ -304,7 +336,8 @@ def data_preparation():
             message = "列的使用状态更新成功！"
     
     return render_template('data-preparation.html', message=message, columns=columns, column_types=column_types, analysis_types=analysis_types,
-                           quantile_low=session.get('global_quantile_low', 0.0), quantile_high=session.get('global_quantile_high', 1.0))
+                           quantile_low=session.get('global_quantile_low', 0.0), quantile_high=session.get('global_quantile_high', 1.0),
+                           unique_values=unique_values)
 
 @app.route('/update_use_column', methods=['POST'])
 def update_use_column():
