@@ -45,10 +45,11 @@ def upload_file():
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
             try:
                 file.save(filepath)
-                session['uploaded_filename'] = filepath
-                return jsonify(success=True, message='文件上传成功')
             except PermissionError as e:
                 return jsonify(success=False, message=f"权限错误: {e}"), 500
+            session['uploaded_filename'] = filepath
+            session['preparation_filepath'] = filepath
+            return jsonify(success=True, message='文件上传成功', redirect_url=url_for('data_preparation'))
 
     return render_template('data-upload.html')
 
