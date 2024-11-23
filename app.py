@@ -419,7 +419,6 @@ def check_analysis_status():
     else:
         return jsonify({"completed": True})
 
-# 因果分析的主路由
 @app.route('/causal-analysis.html', methods=['GET', 'POST'])
 def causal_analysis_view():
     csv_data = []
@@ -434,62 +433,60 @@ def causal_analysis_view():
             error_message = "数据文件未找到，请先上传并准备数据文件。"
             return render_template('causal-analysis.html', error_message=error_message), 400
 
-        # 获取变量文件
-        variable_file = request.files.get('variable_file')
+        # 获取算法类型
         algorithm = request.form.get('algorithm')
 
-        if variable_file:
-            # 保存变量文件
-            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-            variable_file_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{timestamp}_{variable_file.filename}")
-            variable_file.save(variable_file_path)
+        # 创建标志文件，表示分析开始
+        flag_file_path = "in_progress.flag"
+        with open(flag_file_path, 'w') as f:
+            f.write("Analysis in progress")
 
-            # 创建标志文件，表示分析开始
-            flag_file_path = "in_progress.flag"
-            with open(flag_file_path, 'w') as f:
-                f.write("Analysis in progress")
+        # 启动分析任务
+        try:
+            if algorithm == 'pc':
+                print("now is pc")
+                script_path = 'PC算法/pc_easy.py'
+                result = subprocess.run(
+                    ['python', script_path, '--data_file', data_file_path, '--output_file', output_file_path],
+                    capture_output=True, text=True
+                )
+            elif algorithm == 'gies':
+                print("now is gies")
+                script_path = 'GIES算法/gies_easy.py'
+                result = subprocess.run(
+                    ['python', script_path, '--data_file', data_file_path, '--output_file', output_file_path],
+                    capture_output=True, text=True
+                )
 
-            # 启动分析任务
-            try:
-                if algorithm == 'pc':
-                    script_path = 'PC算法/main4.py'
-                    result = subprocess.run(
-                        ['python', script_path, '--variable_file', variable_file_path, '--data_file', data_file_path, '--output_file', output_file_path],
-                        capture_output=True, text=True
-                    )
-                elif algorithm == 'gies':
-                    script_path = 'GIES算法/mymain.py'
-                    result = subprocess.run(
-                        ['python', script_path, '--variable_file', variable_file_path, '--data_file', data_file_path, '--output_file', output_file_path],
-                        capture_output=True, text=True
-                    )
+            # 打印调试输出
+            print(result.stdout)
 
-                # 打印调试输出
-                print(result.stdout)
+            # 检查返回状态
+            if result.returncode != 0:
+                error_message = f"因果分析失败: {result.stderr}"
+                return render_template('causal-analysis.html', error_message=error_message), 500
 
-                # 检查返回状态
-                if result.returncode != 0:
-                    error_message = f"因果分析失败: {result.stderr}"
-                    return render_template('causal-analysis.html', error_message=error_message), 500
+            # 检查结果文件是否生成
+            if os.path.exists(output_file_path):
+                df = pd.read_csv(output_file_path)
+                csv_data = df.to_dict(orient='records')
+            else:
+                error_message = "生成的结果文件不存在。"
+                return render_template('causal-analysis.html', error_message=error_message), 500
 
-                # 检查结果文件是否生成
-                if os.path.exists(output_file_path):
-                    df = pd.read_csv(output_file_path)
-                    csv_data = df.to_dict(orient='records')
-                else:
-                    error_message = "生成的结果文件不存在。"
-                    return render_template('causal-analysis.html', error_message=error_message), 500
+        finally:
+            # 删除标志文件，表示分析完成
+            if os.path.exists(flag_file_path):
+                os.remove(flag_file_path)
+            print("Analysis completed, flag file removed.")
 
-            finally:
-                # 删除标志文件，表示分析完成
-                if os.path.exists(flag_file_path):
-                    os.remove(flag_file_path)
-                print("Analysis completed, flag file removed.")
-
-            return render_template('causal-analysis.html', csv_data=csv_data)
+        print(output_file_path)
+        print(csv_data)
+        return render_template('causal-analysis.html', csv_data=csv_data)
 
     # GET 请求时返回空的结果
     return render_template('causal-analysis.html', csv_data=csv_data)
+
 
 
 
