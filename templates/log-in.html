@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+
+
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Data Analysis System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden; /* 隐藏溢出的视频 */
+            position: relative; /* 绝对定位其他元素所需 */
+        }
+
+        #video-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* 覆盖整个视口 */
+            z-index: -1; /* 确保视频位于其他内容的后面 */
+        }
+
+        /* 其他样式保持不变 */
+
+        .login-container {
+            background-color: rgba(255, 255, 255, 0.7);
+            /* background-color: #ffffff; */
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            width: 350px;
+            z-index: 1;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header h2 {
+            color: #333333;
+            margin: 0;
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .login-form input[type="text"],
+        .login-form input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 16px;
+            color: #333333;
+            box-sizing: border-box;
+        }
+
+        .login-form button[type="submit"] {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            color: #ffffff;
+            background-color: #007bff;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .login-form button[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+
+        .register-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .register-link a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .register-link a:hover {
+            text-decoration: underline;
+        }
+
+        .error-msg {
+            color: red;
+            display: none;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+
+
+<body>
+    <div class="login-container">
+
+    <video autoplay muted loop id="video-background">
+        <source src="static/video/15.mp4" type="video/mp4">
+    </video>
+
+    <div class="login-container">
+        <div class="login-header">
+            <h2>Login</h2>
+        </div>
+        <form class="login-form" id="login-form">
+            <input type="text" name="username" placeholder="Username" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <button type="submit">Login</button>
+            <p class="error-msg" id="error-msg">Incorrect username or password</p>
+        </form>
+        <div class="register-link">
+            <a href="signup.html">Don't have an account? Sign up</a>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById("login-form").addEventListener("submit", function(event) {
+            event.preventDefault(); // Prevent default form submission
+            var username = document.getElementsByName("username")[0].value;
+            var password = document.getElementsByName("password")[0].value;
+
+            // Simulate user database and password verification
+            var users = [
+                { username: "admin", passwordHash: "5f4dcc3b5aa765d61d8327deb882cf99" } // Username: admin, Password: password hash
+                // You can add more users here
+            ];
+
+            var user = users.find(u => u.username === username);
+
+            if (user) {
+                var hashedPassword = md5(password); // Hash the password using MD5
+                if (hashedPassword === user.passwordHash) {
+                    // Password matches, login successful
+                    location.href = "index.html"; // Redirect to homepage
+                } else {
+                    // Password doesn't match, display error message
+                    document.getElementById("error-msg").style.display = "block";
+                }
+            } else {
+                // Username not found, display error message
+                document.getElementById("error-msg").style.display = "block";
+            }
+        });
+    </script>
+
+    <!-- Include MD5 library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.18.0/js/md5.min.js"></script>
+    
+</body>
+
+</html>
