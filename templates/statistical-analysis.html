@@ -9,42 +9,127 @@
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <link rel="stylesheet" href="static/css/global-style.css">
     <style>
+
+        /* 主内容容器 */
         .main-content {
             display: flex;
-            flex-grow: 1;
-            padding: 20px;
-            background-color: #ffffff;
-            border-top-right-radius: 8px;
-            border-bottom-right-radius: 8px;
-            overflow-y: auto;
+            background-color: #ffffff; /* 背景色 */
+            flex-direction: column; /* 垂直排列：顶部是 tab-buttons，下面是内容区域 */
+            width: 100%; /* 占满屏幕宽度 */
+            height: 100%; /* 可选：占满屏幕高度 */
+            box-sizing: border-box;
         }
 
+        /* Tab 按钮容器样式 */
+        .tab-buttons {
+            display: flex; /* 使用 Flexbox */
+            justify-content: flex-start; /* 水平靠左对齐 */
+            gap: 20px; /* 按钮之间的间距 */
+            border-bottom: 1px solid #ddd; /* 添加底部边框 */
+            margin-bottom: 10px; /* 与内容之间的间距 */
+        }
+
+        /* 内容区域（fields-container 和 chart-area） */
+        .tab-content.active {
+            display: block;
+        }
+
+        .visual{
+            display: flex; 
+            flex-direction: row; /* 水平排列 */
+            flex: 1; /* 占据剩余空间 */
+            overflow: hidden; /* 防止内容溢出 */
+        }
+        
+
+        .tab-content {
+            display: none; /* 默认隐藏所有内容版块 */
+        }
+
+        /* 左侧字段区域 */
         .fields-container {
-            width: 20%;
-            max-width: 250px;
+            display: flex; /* 使用 Flexbox 布局 */
+            flex-direction: row; /* 设置为水平排列 */
+            width: 30%;
+            /* max-width: 250px; */
+            margin-left:5px;
+            /* margin-right: 5px; */
+            background-color: #f4f4f9; /* 背景色 */
+            border-right: 1px solid #ddd; /* 添加分隔线 */
+            overflow-y: auto; /* 支持垂直滚动 */
+        }
+
+        /* 右侧图表区域 */
+        .chart-area {
+            flex: 1;    
             display: flex;
             flex-direction: column;
-            margin-right: 20px;
+            justify-content: space-between;
+            background-color: #ffffff; /* 背景色 */
+            border-radius: 4px;
+            margin-right: 5px;
+            /* padding: 20px; */
+            box-sizing: border-box;
+            overflow-y: auto; /* 防止图表内容溢出 */
         }
 
-        .fields-container h2 {
-            color: #2c3e50;
-            font-size: 20px;
-            margin-bottom: 10px;
+
+        /* Tab 按钮样式 */
+        .tab-button {
+            padding: 5px 20px; /* 设置内边距，按钮大小自适应内容 */
+            background-color: transparent; /* 默认背景透明 */
+            border: none; /* 移除默认边框 */
+            font-size: 15px; /* 字体大小 */
+            font-weight: bold; /* 字体加粗 */
+            color: #666; /* 默认字体颜色 */
+            cursor: pointer; /* 鼠标悬停时显示手型 */
+            outline: none; /* 移除点击时的轮廓 */
+            position: relative; /* 伪元素定位需要 */
+        }
+
+        /* 激活状态的按钮 */
+        .tab-button.active {
+            color: #273c75;; /* 激活状态字体颜色 */
+            font-weight: bold; /* 激活状态字体加粗 */
+        }
+
+        /* 激活状态的下划线 */
+        .tab-button.active::after {
+            content: ''; /* 创建下划线 */
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: -1px; /* 下划线紧贴按钮 */
+            height: 3px; /* 下划线高度 */
+            background-color: #273c75; /* 下划线颜色 */
+            border-radius: 2px; /* 添加圆角 */
+            transform: scaleX(1); /* 下划线完全展开 */
+            transition: transform 0.3s ease; /* 添加过渡效果 */
+        }
+
+        /* 非激活按钮悬停效果 */
+        .tab-button:hover {
+            color: #ffffff; /* 鼠标悬停时字体颜色变化 */
+        }
+
+        /* 激活按钮的下划线默认展开 */
+        .tab-button.active:hover::after {
+            transform: scaleX(1); /* 鼠标悬停下划线仍展开 */
         }
 
         #fields {
             list-style: none;
-            padding: 0;
+            padding: 5px;
             margin: 0;
-            max-height: 65vh;
-            overflow-y: auto;
+            flex: 1; /* 占据剩余高度 */
+            overflow-y: auto; /* 启用滚动条 */
             border: 1px solid #ccc;
             border-radius: 4px;
-            background-color: #f4f4f9;
+            background-color: #ffffff;
         }
 
         #fields li {
+            font-size: 14px;
             padding: 10px;
             margin: 5px;
             background-color: #eeeeee;
@@ -59,27 +144,38 @@
             transform: scale(1.05);
         }
 
-        .drop-zone-container {
-            display: flex;
-            flex-direction: column;
-            margin-bottom: 20px;
+        #fields h2 {
+            text-align: center; /* 水平居中 */
         }
 
+        /* drop-zone-container 的样式 */
+        .drop-zone-container {
+            flex: 1; /* 占据剩余宽度 */
+            display: flex; /* 内部也可以使用 Flexbox */
+            flex-direction: column; /* 垂直排列 */
+            gap: 10px; /* Drop Zones 之间的间距 */
+            padding: 10px; /* 内边距 */
+            background-color: #ffffff; /* Drop Zone 区域背景色 */
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+            overflow-y: auto; /* 支持垂直滚动 */
+        }
+
+        /* drop-zone 的样式 */
         .drop-zone {
-            position: relative;
-            height: 50px;
-            margin-bottom: 15px;
-            border: 2px dashed #cccccc;
-            border-radius: 4px;
+            width: 100%; /* 占满父级宽度 */
+            height: 50px; /* Drop Zone 高度 */
             display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #aaaaaa;
-            font-weight: bold;
-            background-color: #f4f4f9;
+            align-items: center; /* 垂直居中 */
+            justify-content: center; /* 水平居中 */
+            background-color: #f9f9f9;
+            border: 2px dashed #ddd;
+            border-radius: 4px;
+            color: #888;
+            font-size: 14px;
             cursor: pointer;
-            transition: background-color 0.3s, transform 0.3s;
-            overflow: hidden;
+            transition: all 0.3s ease;
         }
 
         .drop-zone:hover {
@@ -111,13 +207,6 @@
 
         .drop-zone:hover::after {
             width: 100%;
-        }
-
-        .chart-area {
-            width: 80%;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
         }
 
         #chart {
@@ -165,27 +254,33 @@
         }
 
         .chart-type-buttons {
-            margin-bottom: 20px;
             display: flex;
+            gap: 15px; /* 按钮之间的间距 */
+            padding: 20px 20px;
             justify-content: flex-start;
+            flex-wrap: wrap; /* 当空间不足时换行 */
+            background-color: #fff;
+            border: 1px solid #dee2e6; /* 浅灰色边框 */
+            border-radius: 4px; /* 圆角边框 */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .chart-type-buttons button {
-            background-color: #34495e;
-            margin-right: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px; /* 圆角按钮 */
+            background-color: #273c75; /* 深蓝色背景 */
+            color: #ffffff; /* 白色文字 */
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
         }
 
         .chart-type-buttons button.active {
-            background-color: #1abc9c;
-        }
-
-        .export-button {
-            margin-left: 10px;
-            background-color: #2ecc71;
-        }
-
-        .export-button:hover {
-            background-color: #27ae60;
+            background-color: #2980b9;
         }
 
         /* 自定义滚动条样式 */
@@ -198,55 +293,162 @@
             border-radius: 4px;
         }
 
+        /* 卡片式 Top-bar 样式 */
+        .topbar {
+            display: flex;
+            justify-content: flex-start; /* 内容靠左对齐 */
+            align-items: center; /* 内容垂直居中 */
+            padding: 15px 20px; /* 内边距：上下15px，左右20px */
+            background-color: #ffffff; /* 背景颜色：白色 */
+            border: 1px solid #e5e7eb; /* 边框：浅灰色 */
+            border-radius: 4px; /* 圆角：8px */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* 阴影：轻微提升 */
+            font-family: Arial, sans-serif; /* 字体 */
+            font-size: 14px; /* 字体大小 */
+            color: #374151; /* 字体颜色：深灰 */
+            margin: 5px 15px 0 15px; /* 顺序为：上 右 下 左 */
+            position: sticky; /* 固定在顶部 */
+            top: 0; /* 距顶部 0 */
+            transition: box-shadow 0.3s ease; /* 动态效果：悬停时有变化 */
+        }
+
+        /* 卡片的悬停效果（可选） */
+        .topbar:hover {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); /* 鼠标悬停时增强阴影 */
+        }
+
+        /* 文本样式 */
+        .topbar .results-text {
+            margin: 0;
+            padding: 0;
+            font-weight: 500; /* 字体加粗 */
+            color: #6b7280; /* 次要文字颜色 */
+        }
+
+        .datacontainer {
+            height: 500px; /* 固定高度 */
+            position: relative; /* 创建滚动上下文 */
+            max-height: 80vh; /* 最大高度限制 */
+            overflow-x: hidden; /* 禁止水平滚动，若需水平滚动则设置为 auto */
+            max-width: 100%; /* 确保容器宽度 */
+            overflow-y: auto; /* 启用垂直滚动 */
+            background-color: #ffffff; /* 背景颜色：白色 */
+            border: 1px solid #e5e7eb; /* 边框：浅灰色 */
+            border-radius: 4px; /* 圆角：8px */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* 阴影：轻微提升 */
+            font-family: Arial, sans-serif; /* 字体 */
+            font-size: 14px; /* 字体大小 */
+            color: #374151; /* 字体颜色：深灰 */
+            margin: 0 15px 10px 15px; /* 顺序为：上 右 下 左 */
+            transition: box-shadow 0.3s ease; /* 动态效果：悬停时有变化 */
+        }
+
+        /* 卡片的悬停效果（可选） */
+        .datacontainer:hover {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); /* 鼠标悬停时增强阴影 */
+        }
+
+        /* Table styling */
         .data-table {
-            margin-top: 20px;
-            border-collapse: collapse;
             width: 100%;
+            position: static;
+            border-collapse: collapse;
         }
 
-        .toggle-table-button {
-            background-color: #0b2130;
-            color: #fff;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            padding: 10px 20px;
-            font-size: 16px;
-            transition: background-color 0.3s ease, transform 0.3s ease;
-            margin-bottom: 10px;
-            align-self: flex-start;
-        }
-
-        .data-table-container {
-            max-height: 0;
-            overflow-y: hidden;
-            transition: max-height 0.5s ease;
-        }
-
-        .data-table-container.active {
-            max-height: 50vh;
-            /* 设置最大高度为视口高度的50% */
-            overflow-y: auto;
-        }
-
-        .data-table th,
-        .data-table td {
-            border: 1px solid #ddd;
-            padding: 8px;
+        /* 表头固定样式 */
+        .data-table thead th {
+            top: 0; /* 表头固定在顶部 */
+            z-index: 20; /* 确保在内容上层 */
+            height: 40px; /* 根据需求设置表头高度 */
+            background-color: #ffffff; /* 表头背景色 */
+            color: #1f2937; /* 表头字体颜色 */
+            font-weight: bold;
             text-align: center;
+            padding: 10px;
+            border-right: 1px solid #e5e7eb; /* 纵向分割线 */
+            border-bottom: 2px solid #d1d5db; /* 表头底部边框 */
+            height: 40px; /* 固定表头高度 */
         }
 
-        .data-table th {
-            background-color: #f2f2f2;
-            color: #333;
+        /* 表头上方带颜色条 */
+        .data-table thead th::before {
+            content: '';
+            display: block;
+            height: 4px; /* 彩条高度 */
+            background-color: #273c75; /* 彩条颜色（可调整为其他颜色） */
+            position: absolute;
+            top: 0; /* 紧贴顶部 */
+            left: 0;
+            width: 100%;
+            z-index: 15; /* 确保彩条位于表头下方 */
         }
+
+        .data-table thead th:last-child {
+            border-right: none; /* 最后一列不需要右侧分割线 */
+        }
+        /* 表体行样式 */
+        .data-table tbody tr {
+            transition: background-color 0.3s ease;
+        }
+
+        .data-table tbody tr:nth-child(even) {
+            background-color: #f4f8fc; /* 较浅的背景色 */
+        }
+
+        .data-table tbody tr:nth-child(odd) {
+            background-color: #ffffff; /* 白色背景 */
+        }
+
+        .data-table tbody tr:hover {
+            background-color: #eaf2fe; /* 鼠标悬停高亮 */
+        }
+        
+
+        /* 单元格样式 */
+        .data-table td {
+            padding: 10px;
+            text-align: center;
+            border-right: 1px solid #e5e7eb; /* 纵向分割线 */
+            border-bottom: 1px solid #e5e7eb; /* 单元格底部边框 */
+        }
+
+        .data-table td:last-child {
+            border-right: none; /* 最后一列不需要右侧分割线 */
+        }
+
+        .data-table tbody td {
+            font-size: 14px; /* 设置字体大小 */
+            font-weight: normal; /* 设置字体粗细，可选值：normal, bold, bolder, lighter */
+            color: #374151; /* 设置字体颜色 */
+            padding: 10px; /* 设置单元格的内边距 */
+            text-align: center; /* 设置文本对齐方式，可选值：left, center, right */
+            vertical-align: middle; /* 确保内容垂直居中 */
+            border-bottom: 1px solid #e5e7eb; /* 设置单元格底部边框 */
+        }
+
+
     </style>
 </head>
 
 <body>
     <div class="container">
         <div class="sidebar">
-            <h2>菜单</h2>
+            <div class="menu-logo">
+                <!-- 第一个SVG图标 -->    
+                <a href="index.html" class="logo">
+                    <svg id="icon-1" width="29" height="30" viewBox="0 0 60 62" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M32.7559 8.84226C32.7559 5.86885 36.3719 4.40339 38.442 6.53787L57.5161 26.2056C58.7723 27.5009 59.4748 29.2344 59.4748 31.0388V53.8041C59.4748 56.7775 55.8588 58.243 53.7887 56.1085L34.7146 36.4407C33.4584 35.1454 32.7559 33.4119 32.7559 31.6075V8.84226Z" fill="#FF9500"/>
+                        <path d="M16.1973 8.19578C16.1973 5.22237 19.8133 3.75691 21.8834 5.89139L40.676 25.2689C42.1127 26.7503 42.9162 28.733 42.9162 30.7966V53.1576C42.9162 56.131 39.3002 57.5965 37.2301 55.462L18.156 35.7942C16.8998 34.4989 16.1973 32.7654 16.1973 30.9611V8.19578Z" fill="#4CBFFF"/>
+                        <path d="M0.193359 8.84226C0.193359 5.86885 3.80941 4.40339 5.87947 6.53787L24.9536 26.2056C26.2098 27.5009 26.9123 29.2344 26.9123 31.0388V53.8041C26.9123 56.7775 23.2963 58.243 21.2262 56.1085L2.15209 36.4407C0.895891 35.1454 0.193359 33.4119 0.193359 31.6075V8.84226Z" fill="white"/>
+                    </svg>
+                </a>
+                <!-- 第二个SVG图标 -->
+                <a href="index.html" class="logo">
+                    <svg id="icon-2" width="58" height="13" viewBox="0 0 116 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M11.7296 25.9745C8.14072 25.9745 5.35405 24.8451 3.36961 22.5862C1.40628 20.3273 0.424609 17.1817 0.424609 13.1495C0.424609 9.15951 1.39572 6.02451 3.33794 3.74451C5.28017 1.46451 8.06683 0.324511 11.6979 0.324511C13.8724 0.324511 15.7302 0.736178 17.2713 1.55951C18.8124 2.36173 20.0157 3.48062 20.8813 4.91618C21.7468 6.35173 22.2535 7.9984 22.4013 9.85618H17.1129C16.9441 8.12507 16.3846 6.77396 15.4346 5.80284C14.4846 4.81062 13.2496 4.31451 11.7296 4.31451C9.8085 4.31451 8.36239 5.08507 7.39128 6.62618C6.42017 8.16729 5.93461 10.3523 5.93461 13.1812C5.93461 16.1156 6.43072 18.3217 7.42294 19.7995C8.43628 21.2562 9.86128 21.9845 11.6979 21.9845C13.2813 21.9845 14.5374 21.4778 15.4663 20.4645C16.4163 19.4512 16.9652 18.1106 17.1129 16.4428H22.4013C22.2535 18.3006 21.7468 19.9473 20.8813 21.3828C20.0157 22.8184 18.8124 23.9478 17.2713 24.7712C15.7513 25.5734 13.9041 25.9745 11.7296 25.9745ZM32.0279 25.8795C30.2546 25.8795 28.7979 25.4573 27.6579 24.6128C26.5179 23.7473 25.6735 22.5651 25.1246 21.0662C24.5757 19.5673 24.3013 17.8678 24.3013 15.9678C24.3013 14.0045 24.5757 12.284 25.1246 10.8062C25.6946 9.3284 26.5496 8.17784 27.6896 7.35451C28.8296 6.53118 30.2652 6.11951 31.9963 6.11951C33.3263 6.11951 34.4135 6.3834 35.2579 6.91118C36.1235 7.41784 36.7779 8.10396 37.2213 8.96951H37.9813V6.49951H42.7313V25.4995H37.9813V23.0295H37.2213C36.7779 23.8317 36.1341 24.5073 35.2896 25.0562C34.4452 25.6051 33.3579 25.8795 32.0279 25.8795ZM33.3579 22.2695C34.6457 22.2695 35.6696 21.7101 36.4296 20.5912C37.2107 19.4512 37.6013 17.9206 37.6013 15.9995C37.6013 14.0573 37.2107 12.5267 36.4296 11.4078C35.6696 10.289 34.6457 9.72951 33.3579 9.72951C32.1968 9.72951 31.2785 10.2573 30.6029 11.3128C29.9485 12.3473 29.6213 13.9095 29.6213 15.9995C29.6213 18.0895 29.9485 19.6623 30.6029 20.7178C31.2785 21.7523 32.1968 22.2695 33.3579 22.2695ZM53.5687 25.9745C51.4576 25.9745 49.8637 25.3095 48.787 23.9795C47.7104 22.6495 47.172 20.8445 47.172 18.5645V6.49951H52.302V17.7095C52.302 18.9973 52.5343 20.0001 52.9987 20.7178C53.4631 21.4356 54.2126 21.7945 55.247 21.7945C56.4926 21.7945 57.4531 21.309 58.1287 20.3378C58.8043 19.3667 59.142 18.174 59.142 16.7595V6.49951H64.272V25.4995H59.6487V22.6495H58.8887C58.572 23.5995 57.9915 24.3912 57.147 25.0245C56.3026 25.6578 55.1098 25.9745 53.5687 25.9745ZM76.0421 25.9745C73.931 25.9745 72.2421 25.6473 70.9755 24.9928C69.7299 24.3173 68.8116 23.4728 68.2205 22.4595C67.6505 21.4462 67.3232 20.4328 67.2388 19.4195H72.1155C72.221 19.9684 72.4427 20.4751 72.7805 20.9395C73.1394 21.3828 73.6038 21.7312 74.1738 21.9845C74.7649 22.2378 75.4721 22.3645 76.2955 22.3645C77.3088 22.3645 78.0371 22.1956 78.4805 21.8578C78.9238 21.499 79.1455 21.0451 79.1455 20.4962C79.1455 19.9895 78.9344 19.5673 78.5121 19.2295C78.111 18.8706 77.446 18.5434 76.5171 18.2478L74.2371 17.4878C73.1394 17.1078 72.126 16.6962 71.1971 16.2528C70.2682 15.7884 69.5188 15.1973 68.9488 14.4795C68.3999 13.7617 68.1255 12.8328 68.1255 11.6928C68.1255 10.004 68.7694 8.64229 70.0571 7.60785C71.3449 6.55229 73.171 6.02451 75.5355 6.02451C77.2455 6.02451 78.6388 6.2884 79.7155 6.81618C80.8132 7.34396 81.6366 8.05118 82.1855 8.93784C82.7344 9.8034 83.051 10.764 83.1355 11.8195H78.4488C78.3432 11.0595 78.0266 10.479 77.4988 10.0778C76.971 9.65562 76.2532 9.44451 75.3455 9.44451C74.5221 9.44451 73.8994 9.60284 73.4771 9.91951C73.076 10.2362 72.8755 10.669 72.8755 11.2178C72.8755 11.7667 73.0971 12.2206 73.5405 12.5795C73.9838 12.9384 74.6594 13.2656 75.5671 13.5612L77.8471 14.2895C78.9449 14.6273 79.9477 15.0284 80.8555 15.4928C81.7844 15.9362 82.5232 16.5273 83.0721 17.2662C83.621 17.984 83.8955 18.9234 83.8955 20.0845C83.8955 21.8578 83.2199 23.2828 81.8688 24.3595C80.5388 25.4362 78.5966 25.9745 76.0421 25.9745ZM84.2631 25.4995V25.3095L91.7048 0.79951H100.033L107.506 25.3095V25.4995H102.06L96.0748 4.91618H95.3148L89.2664 25.4995H84.2631ZM90.4381 19.3245L91.5464 15.3345H99.8431L100.951 19.3245H90.4381ZM110.166 25.4995V0.79951H115.486V25.4995H110.166Z" fill="white"/>
+                    </svg>
+                </a>
+            </div>
             <a href="data-upload.html"><i class="fas fa-upload"></i><span>数据上传</span></a>
             <a href="data-preparation.html"><i class="fas fa-cogs"></i><span>数据准备</span></a>
             <a href="statistical-analysis.html"><i class="fas fa-chart-bar"></i><span>统计分析</span></a>
@@ -263,78 +465,76 @@
                 </div>
             </div>
         </div>
+
         <div class="main-content">
-            <div class="fields-container">
-                <h2>字段列表</h2>
-                <ul id="fields">
-                    {% for column in columns %}
-                    <li draggable="true" ondragstart="drag(event)" ondragend="endDrag(event)" id="{{ column }}">{{
-                        column }}</li>
-                    {% endfor %}
-                </ul>
-                <div class="drop-zone-container">
-                    <div class="drop-zone" ondrop="drop(event, 'x')" ondragover="allowDrop(event)" data-var-type="X 轴">
-                        X 轴
-                    </div>
-                    <div class="drop-zone" ondrop="drop(event, 'y')" ondragover="allowDrop(event)" data-var-type="Y 轴">
-                        Y 轴
-                    </div>
-                    <div class="drop-zone" ondrop="drop(event, 'color')" ondragover="allowDrop(event)"
-                        data-var-type="颜色">
-                        颜色
-                    </div>
-                    <div class="drop-zone" ondrop="drop(event, 'size')" ondragover="allowDrop(event)"
-                        data-var-type="大小">
-                        大小
-                    </div>
-                    <div class="drop-zone" ondrop="drop(event, 'opacity')" ondragover="allowDrop(event)"
-                        data-var-type="透明度">
-                        透明度
-                    </div>
-                </div>
-                <button onclick="generateChart()">生成图表</button>
+            <div class="tab-buttons">
+                <button class="tab-button" onclick="showTab('data-display')">数据</button>
+                <button class="tab-button active" onclick="showTab('visualization')">可视化</button>
             </div>
-            <div class="chart-area">
-                <div class="chart-type-buttons">
-                    <button id="scatter-button" class="active" onclick="setChartType('scatter')">散点图</button>
-                    <button id="bar-button" onclick="setChartType('bar')">条形图</button>
-                    <button id="line-button" onclick="setChartType('line')">折线图</button>
-                    <button id="boxplot-button" onclick="setChartType('boxplot')">盒图</button>
-                    <button id="pixel-button" onclick="setChartType('pixel')">像素图</button>
 
-                    <button class="export-button" onclick="exportChart()">导出图表</button>
+            <div id="visualization" class="tab-content">
+            <div class = 'visual'>
 
-                    <button id="causal-button" onclick="location.href='causal-analysis.html'">
-                        <i class="fas fa-brain"></i> 因果分析
-                    </button>
+                <div class="fields-container">
+                    <ul id="fields">
+                        <h2>字段列表</h2>
+                        {% for column in columns %}
+                        <li draggable="true" ondragstart="drag(event)" ondragend="endDrag(event)" id="{{ column }}">{{
+                            column }}</li>
+                        {% endfor %}
+                    </ul>
+                    <div class="drop-zone-container">
+                        <div class="drop-zone" ondrop="drop(event, 'x')" ondragover="allowDrop(event)" data-var-type="X 轴">
+                            X 轴
+                        </div>
+                        <div class="drop-zone" ondrop="drop(event, 'y')" ondragover="allowDrop(event)" data-var-type="Y 轴">
+                            Y 轴
+                        </div>
+                        <div class="drop-zone" ondrop="drop(event, 'color')" ondragover="allowDrop(event)"
+                            data-var-type="颜色">
+                            颜色
+                        </div>
+                        <div class="drop-zone" ondrop="drop(event, 'size')" ondragover="allowDrop(event)"
+                            data-var-type="大小">
+                            大小
+                        </div>
+                        <div class="drop-zone" ondrop="drop(event, 'opacity')" ondragover="allowDrop(event)"
+                            data-var-type="透明度">
+                            透明度
+                        </div>
+                        <button onclick="generateChart()">生成图表</button>
+                    </div>
                 </div>
-                <div id="chart">
-                    <div class="tooltip" id="tooltip"></div>
-                    
+                <div class="chart-area">
+                    <div class="chart-type-buttons">
+                        <button id="scatter-button" onclick="setChartType('scatter')">散点图</button>
+                        <button id="bar-button" onclick="setChartType('bar')">条形图</button>
+                        <button id="line-button" onclick="setChartType('line')">折线图</button>
+                        <button id="boxplot-button" onclick="setChartType('boxplot')">箱线图</button>
+                        <button id="pixel-button" onclick="setChartType('pixel')">像素图</button>
 
+                        <button class="export-button" onclick="exportChart()">导出图表</button>
 
-                    生成的图表将显示在这里
-                </div>
-                <div id="chart-explanation" style="margin-top: 20px; font-size: 14px; color: #333;">
-                    <!-- 生成的解释内容将插入到这里 -->
-                </div>
-                <button class="toggle-table-button" onclick="toggleDataTable()">展开数据表</button>
-                <div class="data-table-container" id="data-table-container">
-                    <table class="data-table" id="data-table">
-                        <thead>
-                            <tr>
-                                <th>数据点序号</th>
-                                <th>X 轴值</th>
-                                <th>Y 轴值</th>
-                                <th>颜色</th>
-                                <th>大小</th>
-                                <th>透明度</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        </tbody>
-                    </table>
-                </div>
+                        <button id="causal-button" onclick="location.href='causal-analysis.html'">
+                            <i class="fas fa-brain"></i> 因果分析
+                        </button>
+                    </div>
+                    <div id="chart">
+                        <div class="tooltip" id="tooltip">
+
+                        </div>
+                        生成的图表将显示在这里
+                    </div>
+                </div>      
+            </div>
+        </div>
+        <!-- 数据版面 -->
+        <div id="data-display" class="tab-content">
+            <div id = "top-bar" class="topbar">
+
+            </div>
+            <div id="data-container" class="datacontainer">
+                <!-- 数据表将动态插入到此处 -->
             </div>
         </div>
     </div>
@@ -376,8 +576,10 @@
             </div>
         </div>
     </div>
+    </div>
 
     <script>
+
         let dropData = {
             x: null,
             y: null,
@@ -407,15 +609,11 @@
             const block = document.createElement('div');
             block.className = 'dragged-block';
             block.innerText = event.target.id;
-            document.body.appendChild(block);
+            // document.body.appendChild(block);
             draggedBlock = block;
 
             event.dataTransfer.setData("text", event.target.id);
             document.addEventListener('mousemove', moveBlock);
-
-            //当拖动时，暂时改变背景色和文字颜色
-            // event.target.style.backgroundColor = '#3498db';
-            // event.target.style.color = '#ffffff';
         }
         function moveBlock(event) {
             if (draggedBlock) {
@@ -521,7 +719,7 @@
                 document.getElementById('pixel-button').classList.add('active');
             }
 
-            generateChart();
+            // generateChart();
         }
 
 
@@ -702,6 +900,71 @@
                 document.querySelector('.toggle-table-button').innerText = '展开数据表';
             })
             .catch(error => console.error('Error:', error));
+        }
+
+        function renderBarChart(data, xField, yField, colorField) {
+            const chart = document.getElementById('chart');
+            chart.innerHTML = '';
+            const tooltip = document.getElementById('tooltip');
+
+            const margin = { top: 20, right: 30, bottom: 50, left: 50 };
+            const width = chart.clientWidth - margin.left - margin.right;
+            const height = chart.clientHeight - margin.top - margin.bottom;
+
+            const svg = d3.select(chart)
+                .append('svg')
+                .attr('width', width + margin.left + margin.right)
+                .attr('height', height + margin.top + margin.bottom)
+                .append('g')
+                .attr('transform', `translate(${margin.left},${margin.top})`);
+
+            const x = d3.scaleBand()
+                .domain(data.map(d => d[xField]))
+                .range([0, width])
+                .padding(0.2);  // 调整条形之间的间距
+
+            const y = d3.scaleLinear()
+                .domain([0, d3.max(data, d => +d[yField])])
+                .nice()  // 使y轴更平滑
+                .range([height, 0]);
+
+            // 修改这里的代码，减少显示的x轴刻度数量
+            svg.append('g')
+                .attr('transform', `translate(0,${height})`)
+                .call(d3.axisBottom(x).tickValues(x.domain().filter(function (d, i) { return !(i % Math.ceil(data.length / 25)); })));
+
+            svg.append('g')
+                .call(d3.axisLeft(y));
+
+            svg.selectAll('.bar')
+                .data(data)
+                .enter()
+                .append('rect')
+                .attr('class', 'bar')
+                .attr('x', d => x(d[xField]))
+                .attr('y', d => y(d[yField]))
+                .attr('width', x.bandwidth())
+                .attr('height', d => height - y(d[yField]))
+                .attr('fill', d => colorField ? d3.scaleOrdinal(d3.schemeCategory10)(d[colorField]) : '#69b3a2')
+                .on('mouseover', function (event, d) {
+                    if (tooltip) {
+                        tooltip.style.opacity = 1;
+                        tooltip.innerHTML = `${xField}: ${d[xField]}<br>${yField}: ${d[yField]}`;
+                    }
+                    d3.select(this).attr('stroke', '#333').attr('stroke-width', 2);
+                })
+                .on('mousemove', function (event) {
+                    if (tooltip) {
+                        tooltip.style.left = (event.pageX + 10) + 'px';
+                        tooltip.style.top = (event.pageY - 25) + 'px';
+                    }
+                })
+                .on('mouseout', function () {
+                    if (tooltip) {
+                        tooltip.style.opacity = 0;
+                    }
+                    d3.select(this).attr('stroke', 'none');
+                });
         }
 
         function renderPixelVisualization(data, dimensions) {
@@ -1079,16 +1342,179 @@
             img.src = url;
         }
 
-        function toggleDataTable() {
-            const dataTableContainer = document.getElementById('data-table-container');
-            const toggleButton = document.querySelector('.toggle-table-button');
-            dataTableContainer.classList.toggle('active');
-            if (dataTableContainer.classList.contains('active')) {
-                toggleButton.innerText = '收起数据表';
-            } else {
-                toggleButton.innerText = '展开数据表';
+        // 页面加载时默认显示可视化版面
+        window.onload = function () {
+            setDefaultTab(); // 设置默认版面
+        };
+
+        function setDefaultTab() {
+            // 设置默认显示的版块为可视化版面
+            showTab('visualization');
+        }
+
+        function showTab(tabId) {
+            // 获取所有的 tab-content
+            const tabs = document.querySelectorAll('.tab-content');
+            const buttons = document.querySelectorAll('.tab-button');
+
+            // 隐藏所有 tab 内容
+            tabs.forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // 移除所有按钮的 active 样式
+            buttons.forEach(button => {
+                button.classList.remove('active');
+            });
+            console.log(tabId);
+            // 显示选中的 tab
+            document.getElementById(tabId).classList.add('active');
+            // 给选中的按钮添加 active 样式
+            console.log(tabId);
+            const button = document.querySelector(`.tab-button[onclick="showTab('${tabId}')"]`);
+            button.classList.add('active');
+            // 如果是数据版面，加载数据
+            if (tabId === "data-display") {
+                loadData();
+                // };
+
             }
         }
+
+        // 加载数据并渲染表格
+        function loadData() {
+            // 获取数据展示容器
+            const dataContainer = document.getElementById('data-container');
+                // window.onload = function() {
+                //     console.log("begin()");
+                //     loadData(); // 在页面完全加载后调用
+            console.log(dataContainer);
+            dataContainer.innerHTML = '<p>正在加载数据...</p>'; // 显示加载提示
+
+            // 调用后端接口获取数据
+            fetch('/api/get-data')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('网络错误或接口不可用');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // 渲染数据表格
+                    // 使用虚拟滚动
+                    renderVirtualTable(data);
+                })
+                .catch(error => {
+                    console.error('数据加载错误:', error);
+                    dataContainer.innerHTML = '<p>数据加载失败，请稍后重试。</p>';
+                });
+        }
+
+        function renderVirtualTable(data, rowHeight = 30, topOffset = 100) {
+            console.log('Rendering virtual table...');
+            console.log('Data:', data);
+
+            const dataContainer = document.getElementById('data-container');
+            const topbar = document.getElementById('top-bar');
+            if (!dataContainer) {
+                console.error('Data container not found in the DOM!');
+                return;
+            }
+
+            console.log('Data container found:', dataContainer);
+
+            // 清空之前的内容
+            const containerHeight = window.innerHeight - topOffset;
+            dataContainer.innerHTML = '';
+            dataContainer.style.position = 'relative';
+            dataContainer.style.height = `${containerHeight}px`;
+            dataContainer.style.overflow = 'auto';
+            // dataContainer.style.border = '1px solid #ccc';
+
+            if (!data || data.length === 0) {
+                console.warn('No data to display!');
+                dataContainer.innerHTML = '<p>没有数据可显示。</p>';
+                return;
+            }
+
+            const totalRows = data.length;
+            const visibleRows = Math.ceil(containerHeight / rowHeight);
+            const bufferRows = 5; // 缓冲区内的行数
+
+            console.log(`Total rows: ${totalRows}, Visible rows: ${visibleRows}, Buffer rows: ${bufferRows}`);
+
+
+            // 顶部操作行
+            topbar.innerHTML = `<span>Showing 1 to ${visibleRows} of ${totalRows} results</span>`;
+
+             // 创建表格及表头
+            const table = document.createElement('table');
+            table.className = 'data-table';
+
+            // 添加表头
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+
+            Object.keys(data[0]).forEach(key => {
+                const th = document.createElement('th');
+                th.innerText = key; // 使用字段名作为表头
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+            console.log('Table header created:', thead);
+
+            const tbody = document.createElement('tbody');
+            table.appendChild(tbody);
+            dataContainer.appendChild(table);
+            console.log('Table and tbody appended to data container.');
+
+            // 创建 spacer 作为占位符
+            const spacer = document.createElement('div');
+            spacer.style.height = `${totalRows * rowHeight}px`; // 整体高度
+            dataContainer.appendChild(spacer);
+            console.log('Spacer added with height:', spacer.style.height);
+
+            // 渲染指定范围的行
+            function renderRows(scrollTop) {
+                const startRow = Math.max(0, Math.floor(scrollTop / rowHeight) - bufferRows);
+                const endRow = Math.min(totalRows, startRow + visibleRows + 2 * bufferRows);
+
+                console.log(`Rendering rows: start=${startRow}, end=${endRow}, scrollTop=${scrollTop}`);
+                tbody.innerHTML = ''; // 清空现有行
+
+                for (let i = startRow; i < endRow; i++) {
+                    const tr = document.createElement('tr');
+                    Object.values(data[i]).forEach(value => {
+                        const td = document.createElement('td');
+                        td.innerText = typeof value === 'object' ? JSON.stringify(value) : value;
+                        tr.appendChild(td);
+                    });
+                    tbody.appendChild(tr);
+                }
+
+                // 更新表格位置
+                tbody.style.transform = `translateY(${startRow * rowHeight}px)`;
+                console.log('Rows rendered with transform:', tbody.style.transform);
+            
+                // 更新顶部提示
+                topbar.innerHTML = `<span>Showing ${startRow + 1} to ${Math.min(endRow, totalRows)} of ${totalRows} results</span>`;
+            }
+
+            // 滚动事件监听
+            dataContainer.addEventListener('scroll', () => {
+                console.log('Scroll event detected. Current scrollTop:', dataContainer.scrollTop);
+                renderRows(dataContainer.scrollTop);
+            });
+
+            // 初始渲染
+            console.log('Initial rendering...');
+            renderRows(0);
+            console.log('Initial rendering complete.');
+        }
+
+
+
 
         var settingsButton = document.getElementById('settings-button');
         var modal = document.getElementById('settings-modal');

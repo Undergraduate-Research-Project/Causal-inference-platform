@@ -10,12 +10,20 @@ import matplotlib.pyplot as plt
 import networkx as nx  # 添加这个导入
 import plotly.graph_objects as go
 import subprocess
+import json
+# CIP3/app.py
+from flask import Flask
 
+
+from api.deepseek import DeepSeekClient  
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 UPLOAD_FOLDER = 'uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+client = DeepSeekClient()  
+
+
 
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
@@ -406,7 +414,72 @@ def generate_chart():
         'size': size
     })
 
+@app.route('/api/get-data', methods=['GET'])
+def get_data():
+    try:
+        preparation_filepath = session.get('preparation_filepath')
+        print(f"Attempting to read file from: {preparation_filepath}")
+        data = pd.read_csv(preparation_filepath)
+        print(data.head())
+        data_json = data.to_dict(orient='records')
+        return jsonify(data_json)
+    except FileNotFoundError as e:
+        print(f"FileNotFoundError: {e}")
+        return jsonify({'error': '数据文件未找到，请检查路径'}), 404
+    except pd.errors.EmptyDataError as e:
+        print(f"EmptyDataError: {e}")
+        return jsonify({'error': '文件内容为空或格式不正确'}), 400
+    except Exception as e:
+        print(f"Unhandled Exception: {e}")
+        return jsonify({'error': str(e)}), 500
+    
+    # 计算统计信息的函数
+def get_statistics_from_csv(file_path):
+    # 读取CSV文件
+    df = pd.read_csv(file_path)
+    
+    # 初始化存储统计信息的列表
+    statistics = []
+    
+    # 遍历每一列（变量）
+    for column in df.columns:
+        column_data = df[column]
+        
+        # 判断是否为类别类型（非数字类型）
+        if column_data.dtype == 'object' or column_data.nunique() < 10:  # 假设少于10个唯一值的视为类别类型
+            # 类别类型的统计值默认为0
+            stats = {
+                'name': column,
+                'mean': 0,
+                'stdDev': 0,
+                'median': 0,
+                'type': 'categorical'  # 标明为类别类型
+            }
+        else:
+            # 数值类型的统计信息
+            stats = {
+                'name': column,
+                'mean': column_data.mean(),
+                'stdDev': column_data.std(),
+                'median': column_data.median(),
+                'type': 'numerical'  # 标明为数值类型
+            }
+        
+        statistics.append(stats)
+    
+    return statistics
 
+# 定义API接口，返回统计信息
+@app.route('/api/get-statistics', methods=['GET'])
+def get_statistics():
+    try:
+        # 获取CSV的统计信息
+        preparation_filepath = session.get('preparation_filepath')
+        stats = get_statistics_from_csv(preparation_filepath)
+        return jsonify(stats)
+    except Exception as e:
+        # 错误处理
+        return jsonify({"error": str(e)}), 500
 
 
 
@@ -418,6 +491,7 @@ def check_analysis_status():
         return jsonify({"completed": False})
     else:
         return jsonify({"completed": True})
+    
 
 @app.route('/causal-analysis.html', methods=['GET', 'POST'])
 def causal_analysis_view():
@@ -436,6 +510,10 @@ def causal_analysis_view():
         # 获取算法类型
         algorithm = request.form.get('algorithm')
 
+        background_edge_json = request.form.get('background_edge')
+        background_edge = json.loads(background_edge_json) if background_edge_json else []
+        print(f"接收到的 background_edge: {background_edge}")
+
         # 创建标志文件，表示分析开始
         flag_file_path = "in_progress.flag"
         with open(flag_file_path, 'w') as f:
@@ -447,14 +525,14 @@ def causal_analysis_view():
                 print("now is pc")
                 script_path = 'PC算法/pc_easy.py'
                 result = subprocess.run(
-                    ['python', script_path, '--data_file', data_file_path, '--output_file', output_file_path],
+                    ['python', script_path, '--data_file', data_file_path, '--output_file', output_file_path, '--background_edge', background_edge_json],
                     capture_output=True, text=True
                 )
             elif algorithm == 'gies':
                 print("now is gies")
                 script_path = 'GIES算法/gies_easy.py'
                 result = subprocess.run(
-                    ['python', script_path, '--data_file', data_file_path, '--output_file', output_file_path],
+                    ['python', script_path, '--data_file', data_file_path, '--output_file', output_file_path, '--background_edge', background_edge_json],
                     capture_output=True, text=True
                 )
 
@@ -470,6 +548,8 @@ def causal_analysis_view():
             if os.path.exists(output_file_path):
                 df = pd.read_csv(output_file_path)
                 csv_data = df.to_dict(orient='records')
+                return jsonify(csv_data=csv_data)  # 将数据返回给前端
+
             else:
                 error_message = "生成的结果文件不存在。"
                 return render_template('causal-analysis.html', error_message=error_message), 500
@@ -486,9 +566,6 @@ def causal_analysis_view():
 
     # GET 请求时返回空的结果
     return render_template('causal-analysis.html', csv_data=csv_data)
-
-
-
 
 
 @app.route('/get-csv-data', methods=['GET'])
@@ -530,6 +607,54 @@ def download(filename):
         return send_file(filepath, as_attachment=True)
     else:
         return "文件未找到", 404
+    
+@app.route('/api/chat', methods=['POST'])
+async def chat_handler():
+    """处理大模型对话请求"""
+    try:
+        df = pd.read_csv(session.get('preparation_filepath'))
+    
+        # 初始化存储统计信息的列表
+        statistics = []
+        
+        # 遍历每一列（变量）
+        for column in df.columns:
+            statistics.append(column)
+        causal_graph = client.generate_causal_graph(statistics)
+        response_data = {
+            "nodes": list(causal_graph.nodes()),
+            "edges": [
+                {"from": src, "to": dst} 
+                for src, dst in causal_graph.edges()
+            ]
+        }
+        
+        return jsonify(response_data), 200
+        
+        
+    except Exception as e:
+        logging.error(f"API Error: {str(e)}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
+
+
+@app.route('/analyze_two_factor', methods=['POST'])
+def analyze_two_factor():
+    # 获取请求中的JSON数据
+    data = request.get_json()
+
+    # 从JSON数据中提取变量
+    cause_var = data.get('cause_var')
+    effect_var = data.get('effect_var')
+
+    # 打印或处理这些变量
+    print(f"原因变量: {cause_var}, 结果变量: {effect_var}")
+
+    # 这里可以执行进一步的处理逻辑
+    # ...
+
+    # 返回响应（如果需要）
+    return jsonify({"status": "success", "message": "Variables received"}), 200
+
 
 if __name__ == "__main__":
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)

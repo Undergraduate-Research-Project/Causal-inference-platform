@@ -8,11 +8,19 @@ def main():
     parser = argparse.ArgumentParser(description="GIES算法运行脚本")
     parser.add_argument('--data_file', required=True, help="数据文件路径")
     parser.add_argument('--output_file', required=True, help="输出结果的保存路径")
+<<<<<<< HEAD
+=======
+    parser.add_argument('--background_edge', required=True, help="666")
+>>>>>>> using_model
 
     # 解析参数
     args = parser.parse_args()
     data_file = args.data_file
     output_file = args.output_file
+<<<<<<< HEAD
+=======
+    background_edge_json = args.background_edge
+>>>>>>> using_model
 
     # 加载数据文件
     print("加载数据文件...")
