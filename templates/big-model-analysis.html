@@ -42,13 +42,7 @@
             height: 60vh;
             position: relative;
         }
-        /* .selection-box {
-            display: grid;
-            grid-template-columns: auto 1fr;
-            gap: 10px;
-            align-items: center;
-            margin: 10px 0;
-        } */
+  
         .selection-box {
             grid-template-columns: 120px 1fr;  /* 固定标签宽度，内容自适应 */
             gap: 15px;
@@ -215,7 +209,7 @@
         <div class="section_graph">
             <div class="causal-header">
                 <h3>初步因果图</h3>
-                <button id="generate" onclick="generateCausalGraph()">生成初步因果图</button>
+                <button id="generate" onclick="generateCausalGraph_init()">生成初步因果图</button>
             </div>
             <div id="causal-graph-preview" class="graph-placeholder">
                 因果图预览区域
@@ -227,9 +221,9 @@
             <h3>因果效应分析</h3>
             <div class="selection-box">
                 <label>原因变量：</label>
-                <select id="cause-var"></select>
+                <select id="cause-var" class="var-selector"></select>
                 <label>结果变量：</label>
-                <select id="effect-var"></select>
+                <select id="effect-var" class="var-selector"></select>
             </div>
             <button onclick="generateCausalGraph()">筛选后门调整集</button>
         </div>
@@ -254,7 +248,86 @@
     </div>
 </div>
     <script>
-        
+            // 动态加载变量选项
+            var causeVar = "";
+            var effectVar = ""; 
+            document.addEventListener('DOMContentLoaded', function() {
+                // 从后端接口获取数据集
+                fetch('/api/get-statistics')
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('网络错误或接口不可用');
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            console.log(data);
+                            // 动态填充下拉菜单
+                            const populateSelect = (selectId) => {
+                                const select = document.getElementById(selectId);
+                                select.innerHTML = data.map(v => 
+                                    `<option value="${v.name}">${v.name}</option>`
+                                ).join('');
+                            }
+
+                            populateSelect('cause-var');
+                            populateSelect('effect-var');
+                        })
+                        .catch(error => {
+                            console.error('数据加载错误:', error);
+                            document.getElementById('dataset-config').innerHTML = '<p>数据加载失败，请稍后重试。</p>';
+                        });
+
+            });
+
+            // 监听选择变化
+            document.querySelectorAll('.var-selector').forEach(select => {
+                select.addEventListener('change', function() {
+                    const payload = {
+                        cause_var: document.getElementById('cause-var').value,
+                        effect_var: document.getElementById('effect-var').value
+                    };
+                    
+                    console.log("++++++++++++++++++++");
+                    console.log(document.getElementById('cause-var').value);
+                    console.log(document.getElementById('effect-var').value);
+                    // 获取选中的变量
+                    causeVar = document.getElementById('cause-var').value;
+                    effectVar = document.getElementById('effect-var').value;
+                    
+                });
+            });
+
+            function generateCausalGraph() {
+                
+                console.log('发送变量:', { causeVar, effectVar });
+
+                // 构建请求数据
+                const payload = {
+                    cause_var: causeVar,
+                    effect_var: effectVar
+                };
+
+                // 发送到Flask后端
+                fetch('/analyze_two_factor', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    // 请求成功发送后，不需要处理返回的数据
+                })
+                .catch(error => {
+                    console.error('请求失败:', error);
+                    showErrorNotification("分析请求失败，请检查控制台");
+                });
+            }
+
     </script>
 </body>
 </html>

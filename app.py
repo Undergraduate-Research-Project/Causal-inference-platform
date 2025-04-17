@@ -599,6 +599,25 @@ def download(filename):
         return send_file(filepath, as_attachment=True)
     else:
         return "文件未找到", 404
+    
+@app.route('/analyze_two_factor', methods=['POST'])
+def analyze_two_factor():
+    # 获取请求中的JSON数据
+    data = request.get_json()
+
+    # 从JSON数据中提取变量
+    cause_var = data.get('cause_var')
+    effect_var = data.get('effect_var')
+
+    # 打印或处理这些变量
+    print(f"原因变量: {cause_var}, 结果变量: {effect_var}")
+
+    # 这里可以执行进一步的处理逻辑
+    # ...
+
+    # 返回响应（如果需要）
+    return jsonify({"status": "success", "message": "Variables received"}), 200
+
 
 if __name__ == "__main__":
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
