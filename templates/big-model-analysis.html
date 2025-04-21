@@ -382,6 +382,12 @@
                 console.log(data)
                 console.log(data.edges)
                 console.log(data.nodes)
+
+
+                window.currentCausalGraph = {
+                    nodes: data.nodes,
+                    edges: data.edges
+                };
                 renderGraph(data.nodes, data.edges);
                 // 移除加载状态
                 // chatBox.removeChild(loadingMsg);
@@ -454,36 +460,51 @@
                 });
             });
 
+            
             function generateCausalGraph() {
+                // 获取当前选中的变量
+                const causeVar = document.getElementById('cause-var').value;
+                const effectVar = document.getElementById('effect-var').value;
                 
-                console.log('发送变量:', { causeVar, effectVar });
+                // 验证数据完整性
+                if (!causeVar || !effectVar || !window.currentCausalGraph) {
+                    alert("请先选择变量并生成因果图");
+                    return;
+                }
 
-                // 构建请求数据
-                const payload = {
-                    cause_var: causeVar,
-                    effect_var: effectVar
-                };
-
-                // 发送到Flask后端
-                fetch('/analyze_two_factor', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(payload)
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    // 请求成功发送后，不需要处理返回的数据
-                })
-                .catch(error => {
-                    console.error('请求失败:', error);
-                    showErrorNotification("分析请求失败，请检查控制台");
-                });
+                // 调用独立分析函数
+                analyzeBackdoor(causeVar, effectVar);
             }
 
+            // analyzeBackdoor函数
+            async function analyzeBackdoor(causeVar, effectVar) {
+                try {
+                    const response = await fetch('/api/backdoor_adjustment', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            cause_var: causeVar,
+                            effect_var: effectVar,
+                            nodes: window.currentCausalGraph.nodes,
+                            edges: window.currentCausalGraph.edges
+                        })
+                    });
+
+                    const result = await response.json();
+                    displayAdjustmentResult(result.adjustment_set);
+                } catch (error) {
+                    console.error('分析失败:', error);
+                    showError("后端请求失败");
+                }
+            }
+
+            // 新增结果显示函数
+            function displayAdjustmentResult(adjustmentSet) {
+                const resultDiv = document.getElementById('result-display');
+                resultDiv.innerHTML = adjustmentSet.length > 0 
+                    ? `<strong>需要调整的变量集：</strong>${adjustmentSet.join(', ')}`
+                    : "无需后门调整";
+            }
     </script>
 </body>
 </html>

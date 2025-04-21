@@ -22,7 +22,7 @@ app.secret_key = 'your_secret_key'
 UPLOAD_FOLDER = 'uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 client = DeepSeekClient()  
-
+causal_graph_cache = None
 
 
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
@@ -655,6 +655,81 @@ def analyze_two_factor():
     # 返回响应（如果需要）
     return jsonify({"status": "success", "message": "Variables received"}), 200
 
+
+@app.route('/api/backdoor_adjustment', methods=['POST'])
+def backdoor_adjustment():
+    try:
+        data = request.get_json()
+        
+        # 验证数据结构
+        required = ['cause_var', 'effect_var', 'nodes', 'edges']
+        if not all(key in data for key in required):
+            return jsonify({"error": "缺少必要参数"}), 400
+            
+        # 验证边格式
+        if not all(isinstance(edge, dict) and 'from' in edge and 'to' in edge 
+                  for edge in data['edges']):
+            return jsonify({"error": "edges格式错误"}), 400
+
+        # 生成边列表字符串
+        edges_str = '\n'.join([f"{e['from']} → {e['to']}" for e in data['edges']])
+
+        # 构造提示词，明确要求严格JSON格式
+        prompt = f"""作为因果推断专家，请基于以下因果图分析：
+        
+【因果图结构】
+变量列表：{', '.join(data['nodes'])}
+因果边：
+{edges_str}
+
+【分析任务】
+确定在估计 {data['cause_var']} 对 {data['effect_var']} 的因果效应时，需要调整的最小变量集合。
+
+请严格遵循后门准则：
+1. 阻断所有非因果路径
+2. 不包含任何中介变量
+
+请返回严格符合以下JSON格式的内容，不要包含任何其他文本或注释：
+{{"adjustment_set": [...]}}"""
+
+        # 调用大模型
+        messages = [
+            {"role": "system", "content": "你是一个遵循Judea Pearl因果准则的专家"},
+            {"role": "user", "content": prompt}
+        ]
+        response = client.get_response(messages)
+        logging.info(f"""
+        === 大模型原始响应 ===
+        {response['content']}
+        """)
+        model_response = response['content'].strip()
+        
+        logging.info(f"模型原始响应: {model_response}")
+        
+        # 预处理响应内容，去除可能的代码块标记
+        if model_response.startswith('```json'):
+            model_response = model_response[7:-3].strip()
+        elif model_response.startswith('```'):
+            model_response = model_response[3:-3].strip()
+
+        # 防御性解析
+        try:
+            result = json.loads(model_response)
+            if not isinstance(result.get('adjustment_set'), list):
+                raise ValueError("adjustment_set应为列表类型")
+                
+            return jsonify(result), 200
+        except json.JSONDecodeError as e:
+            logging.error(f"JSON解析失败: {e}，响应内容: {model_response}")
+            return jsonify({"adjustment_set": [], "error": "响应格式无效"}), 200
+        except Exception as e:
+            logging.error(f"解析错误: {e}，响应内容: {model_response}")
+            return jsonify({"adjustment_set": [], "error": "解析响应失败"}), 200
+
+    except Exception as e:
+        logging.error(f"后端错误: {str(e)}")
+        return jsonify({"error": "分析服务不可用"}), 500
+    
 
 if __name__ == "__main__":
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
