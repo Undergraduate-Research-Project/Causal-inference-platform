@@ -5,31 +5,21 @@ from causallearn.search.ConstraintBased.PC import pc
 from causallearn.utils.cit import fisherz
 from causallearn.utils.PCUtils.BackgroundKnowledge import BackgroundKnowledge
 from causallearn.utils.GraphUtils import GraphUtils
-<<<<<<< HEAD
-=======
 from causallearn.graph.GraphNode import GraphNode
->>>>>>> using_model
 
 def main():
     # 创建命令行参数解析器
     parser = argparse.ArgumentParser(description="PC算法运行脚本")
     parser.add_argument('--data_file', required=True, help="数据文件路径")
     parser.add_argument('--output_file', required=True, help="输出结果的保存路径")
-<<<<<<< HEAD
-=======
     parser.add_argument('--background_edge', required=True, help="666")
->>>>>>> using_model
     print(9,flush=True)
     # 解析参数
     args = parser.parse_args()
     data_file = args.data_file
     output_file = args.output_file
-<<<<<<< HEAD
-
-=======
     background_edge_json = args.background_edge
     print(background_edge_json)
->>>>>>> using_model
     # 加载数据文件
     print("加载数据文件...")
     data_df = pd.read_csv(data_file)
@@ -40,8 +30,6 @@ def main():
 
     # 初始化背景知识
     bck = BackgroundKnowledge()
-<<<<<<< HEAD
-=======
     bck.add_required_by_node(GraphNode('Diameter'), GraphNode('Viscera weight'))
     if background_edge_json:
         background_edge = eval(background_edge_json)
@@ -55,7 +43,6 @@ def main():
             assert bck.is_required(node1, node2)
 
     print("bck is ",bck)
->>>>>>> using_model
 
     # 运行 PC 算法
     print("开始运行PC算法...")

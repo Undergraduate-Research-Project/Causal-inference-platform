@@ -12,7 +12,6 @@ import plotly.graph_objects as go
 import subprocess
 import json
 # CIP3/app.py
-from flask import Flask
 
 
 from api.deepseek import DeepSeekClient  
@@ -22,7 +21,7 @@ app.secret_key = 'your_secret_key'
 UPLOAD_FOLDER = 'uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 client = DeepSeekClient()  
-causal_graph_cache = None
+
 
 
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
@@ -528,6 +527,9 @@ def causal_analysis_view():
                     ['python', script_path, '--data_file', data_file_path, '--output_file', output_file_path, '--background_edge', background_edge_json],
                     capture_output=True, text=True
                 )
+                print("STDOUT:", result.stdout)
+                print("STDERR:", result.stderr)
+
             elif algorithm == 'gies':
                 print("now is gies")
                 script_path = 'GIES算法/gies_easy.py'
@@ -686,8 +688,12 @@ def backdoor_adjustment():
 确定在估计 {data['cause_var']} 对 {data['effect_var']} 的因果效应时，需要调整的最小变量集合。
 
 请严格遵循后门准则：
-1. 阻断所有非因果路径
-2. 不包含任何中介变量
+1. ​**阻断所有非因果路径**​（后门路径）:  
+   - 使用d-分离原则识别所有从 {data['cause_var']} 到 {data['effect_var']} 的 ​**非因果路径**​（即指向 {data['cause_var']} 的路径）。
+   - 确保调整集合阻断这些路径（如链结构 $i \rightarrow m \rightarrow j$ 或分叉结构 $i \leftarrow m \rightarrow j$ 需包含$m$，对撞结构 $i \rightarrow m \leftarrow j$ 需不含$m$及其后代）。
+
+2. ​**不包含任何中介变量**​（即 {data['cause_var']} 的后代）:  
+   - 排除所有位于 {data['cause_var']} 到 {data['effect_var']} 因果路径上的变量。
 
 请返回严格符合以下JSON格式的内容，不要包含任何其他文本或注释：
 {{"adjustment_set": [...]}}"""
@@ -698,7 +704,7 @@ def backdoor_adjustment():
             {"role": "user", "content": prompt}
         ]
         response = client.get_response(messages)
-        logging.info(f"""
+        print(f"""
         === 大模型原始响应 ===
         {response['content']}
         """)
