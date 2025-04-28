@@ -243,7 +243,8 @@
         <!-- 后门调整分析 -->
         <div class="section">
             <h3>后门调整分析</h3>
-
+            <div id="result-display1">
+            </div>
             <button onclick="calculateEffect()">进行最终推断</button>
         </div>
 
@@ -500,7 +501,7 @@
 
             // 新增结果显示函数
             function displayAdjustmentResult(adjustmentSet) {
-                const resultDiv = document.getElementById('result-display');
+                const resultDiv = document.getElementById('result-display1');
                 resultDiv.innerHTML = adjustmentSet.length > 0 
                     ? `<strong>需要调整的变量集：</strong>${adjustmentSet.join(', ')}`
                     : "无需后门调整";

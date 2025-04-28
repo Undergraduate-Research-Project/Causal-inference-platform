@@ -68,14 +68,13 @@
             color: #ffffff;
             border-radius: 6px;
             cursor: pointer;
-            padding: 10px 15px;
             font-size: 14px;
             transition: background-color 0.3s ease;
             border: none;
             width: auto;
-            margin-top: 20px;
+            /* margin-top: 20px; */
             display: block;
-            margin-left: auto;
+            /* margin-left: auto; */
             margin-right: auto;
         }
         .button:hover {
@@ -83,7 +82,6 @@
         }
         .upload-section {
             display: flex;
-            flex-direction: column;
             align-items: center;
             /* padding: 15px; */
             padding: 30px;
@@ -102,9 +100,11 @@
     /* 上传区样式 */
         .upload-row {
             display: flex;
-            gap: 150px;
+            align-items: center;
+            gap: 20px;  /* 控制元素间距 */
+            /* gap: 150px; */
             justify-content: center;
-            margin-bottom: 30px;
+            /* margin-bottom: 30px; */
         }
 
 
@@ -117,7 +117,8 @@
         #csvTableContainer {
             flex: 1;
             max-width: 45%;
-            overflow: hidden;
+            overflow-y: auto;
+            max-height: 250px;
             box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);
             border-radius: 8px;
             padding: 40px; /* 增加内边距 */
@@ -145,7 +146,7 @@
             height: 600px;
             background-color: #ffffff;
             border-radius: 8px;
-            padding: 20px;
+
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
@@ -187,12 +188,9 @@
             background-color: #45a049;
         }
 
-        #csvTableContainer {
-            margin-bottom: 20px;
-        }
 
         #graph-container {
-            height: 400px;
+            height: 320px;
         }
 
         /* 容器样式：为所有步骤创建统一的容器 */
@@ -288,6 +286,22 @@
             background-color: #e0e0e0;
         }
 
+        .algorithm-label {
+            white-space: nowrap;  /* 防止标签换行 */
+            margin: 10px;
+            font-weight: 500;
+            color: #333;
+        }
+        .graph-placeholder_1 {
+            border: 2px dashed #aaa;
+            background-color: #f0f0f0f0;
+            height: 320px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+        }
+
 
     </style>
 </head>
@@ -357,20 +371,18 @@
         <div class="card">
             <form enctype="multipart/form-data" id="uploadForm" onsubmit="startAnalysis(event)">
                 <div class="upload-row">
-                    <div class="upload-section">
-                        <label for="algorithm">选择算法:</label>
-                        <select name="algorithm" id="algorithm" class="upload-button">
-                            <option value="pc">PC算法</option>
-                            <option value="gies">GIES算法</option>
-                        </select>
-                    </div>
+                    <label for="algorithm" class="algorithm-label">选择算法:    </label>
+                    <select name="algorithm" id="algorithm" class="upload-button">
+                        <option value="pc">PC算法</option>
+                        <option value="gies">GIES算法</option>
+                    </select>
+                    <button type="submit" class="button" id="analyzeButton">上传并分析</button>
                 </div>
-                <button type="submit" class="button" id="analyzeButton">上传并分析</button>
             </form>
         </div>
         
         <!-- 分析结果卡片 -->
-        <div class="card result-card" id="resultCard" style="display: none;">
+        <div class="card" id="resultCard" >
             <h2>分析结果</h2>
             <div class="result-content">
                 <!-- 左侧数据表 -->
@@ -384,7 +396,7 @@
                 </div>
         
                 <!-- 右侧可视化图 -->
-                <div id="graph-container"></div>
+                <div id="graph-container" class="graph-placeholder_1"></div>
             </div>
         </div>   
 
