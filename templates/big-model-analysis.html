@@ -506,6 +506,69 @@
                     ? `<strong>需要调整的变量集：</strong>${adjustmentSet.join(', ')}`
                     : "无需后门调整";
             }
+            function calculateEffect() {
+                // 获取选中的变量
+                const causeVar = document.getElementById('cause-var').value;
+                const effectVar = document.getElementById('effect-var').value;
+                console.log(causeVar, effectVar);
+                // 验证数据完整性
+                if (!causeVar || !effectVar || !window.currentCausalGraph) {
+                    alert("请先选择变量并生成因果图");
+                    return;
+                }
+
+                // 构造请求数据
+                const requestData = {
+                    cause_var: causeVar,
+                    effect_var: effectVar,
+                    nodes: window.currentCausalGraph.nodes,
+                    edges: window.currentCausalGraph.edges
+                };
+
+                // 发送POST请求
+                fetch('/api/calculate-effect', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('网络响应异常');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                    } else {
+                        // 展示结果到页面
+                        displayResult(data);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('请求失败: ' + error.message);
+                });
+            }
+
+            // 结果展示函数
+            function displayResult(data) {
+                const resultDiv = document.getElementById('result-display');
+                
+                // 使用Plotly绘制结果（示例）
+                const traces = [{
+                    x: Object.keys(data),
+                    y: Object.values(data),
+                    type: 'bar'
+                }];
+                
+                Plotly.newPlot(resultDiv, traces, {
+                    title: '因果效应指标',
+                    yaxis: { title: '数值' }
+                });
+            }
     </script>
 </body>
 </html>

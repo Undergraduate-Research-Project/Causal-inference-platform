@@ -11,6 +11,7 @@ import networkx as nx  # 添加这个导入
 import plotly.graph_objects as go
 import subprocess
 import json
+from EI.calculator import *
 # CIP3/app.py
 
 
@@ -736,6 +737,69 @@ def backdoor_adjustment():
         logging.error(f"后端错误: {str(e)}")
         return jsonify({"error": "分析服务不可用"}), 500
     
+
+
+@app.route('/api/calculate-effect', methods=['POST'])
+def calculate_effect():
+    try:
+        # 读取CSV文件并创建图
+        G = nx.DiGraph()
+        df = pd.read_csv('static/result_new.csv')
+        edges = []
+        for _, row in df.iterrows():
+            node1 = row['Node1']
+            node2 = row['Node2']
+            edges.append((node1, node2))
+        G.add_edges_from(edges)
+
+        # 验证图是否是DAG
+        if nx.is_directed_acyclic_graph(G):
+            print("图验证通过：是有向无环图（DAG）")
+        else:
+            return jsonify({"error": "图中存在环，无法计算因果效应！"}), 400
+
+        # 获取文件路径并处理数据
+        data_file_path = session.get('preparation_filepath')  # 注意这里你可以考虑使用请求体传递文件路径
+        t = EffectiveInformation(data_file_path, G)
+
+        data = request.get_json()
+
+        #从JSON数据中提取变量
+        cause_var = data.get('cause_var')
+        effect_var = data.get('effect_var')
+
+        # 设置处理变量和目标变量
+        success = t.set_var(
+            treatment_name=cause_var, 
+            target_name=effect_var
+        )
+
+        if success:
+            # 计算因果效应指标
+            effects = t.measure_causal_effect()
+
+            # 构造返回的数据字典
+            result = {
+                "kl_divergence": effects[0],
+                "js_divergence": effects[1],
+                "total_variation": effects[2],
+                "wasserstein_distance": effects[3],
+                "hellinger_distance": effects[4]
+            }
+            print(result)
+
+            return jsonify(result)  # 返回计算结果
+        else:
+            return jsonify({"error": "因果路径不存在，请检查图结构！"}), 400
+
+    except Exception as e:
+        # 捕获异常并返回错误信息
+        print("发生错误:", str(e))
+        return jsonify({"error": "发生错误，请检查服务器日志"}), 500
+
+
+
+
 
 if __name__ == "__main__":
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
