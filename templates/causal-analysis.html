@@ -63,6 +63,20 @@
             font-size: 12px;
             color: #555;
         }
+        .button_mid {
+            background-color: #1e2b52;
+            color: #ffffff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s ease;
+            border: none;
+            width: auto;
+            /* margin-top: 20px; */
+            display: block;
+            margin-left: 10px;
+            /* margin-right: auto; */
+        }
         .button {
             background-color: #1e2b52;
             color: #ffffff;
@@ -376,7 +390,8 @@
                         <option value="pc">PC算法</option>
                         <option value="gies">GIES算法</option>
                     </select>
-                    <button type="submit" class="button" id="analyzeButton">上传并分析</button>
+                    <button type="submit" class="button_mid" id="analyzeButton">经典算法分析</button>
+                    <button class="button" onclick="location.href='big-model-analysis.html'">大模型分析</button>
                 </div>
             </form>
         </div>
@@ -758,6 +773,7 @@
         const formData = new FormData(document.getElementById('uploadForm'));
 
         formData.append('background_edge', JSON.stringify(background_edge));
+        formData.append('sel_var', checkedVariables)
 
 
         console.log("发送请求到 /causal-analysis.html");

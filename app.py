@@ -22,7 +22,7 @@ app.secret_key = 'your_secret_key'
 UPLOAD_FOLDER = 'uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 client = DeepSeekClient()  
-
+selected_var = ""
 
 
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
@@ -514,6 +514,13 @@ def causal_analysis_view():
         background_edge = json.loads(background_edge_json) if background_edge_json else []
         print(f"接收到的 background_edge: {background_edge}")
 
+        global selected_var
+        selected_var= request.form.get('sel_var')
+        selected_var = selected_var if selected_var else ""
+        print("+++++++++++++++++++++++")
+        print(selected_var)
+        print(type(selected_var))
+
         # 创建标志文件，表示分析开始
         flag_file_path = "in_progress.flag"
         with open(flag_file_path, 'w') as f:
@@ -525,7 +532,7 @@ def causal_analysis_view():
                 print("now is pc")
                 script_path = 'PC算法/pc_easy.py'
                 result = subprocess.run(
-                    ['python', script_path, '--data_file', data_file_path, '--output_file', output_file_path, '--background_edge', background_edge_json],
+                    ['python', script_path, '--data_file', data_file_path, '--output_file', output_file_path, '--background_edge', background_edge_json,'--variable_names',selected_var],
                     capture_output=True, text=True
                 )
                 print("STDOUT:", result.stdout)
@@ -535,12 +542,13 @@ def causal_analysis_view():
                 print("now is gies")
                 script_path = 'GIES算法/gies_easy.py'
                 result = subprocess.run(
-                    ['python', script_path, '--data_file', data_file_path, '--output_file', output_file_path, '--background_edge', background_edge_json],
+                    ['python', script_path, '--data_file', data_file_path, '--output_file', output_file_path, '--background_edge', background_edge_json,'--variable_names',selected_var],
                     capture_output=True, text=True
                 )
 
             # 打印调试输出
             print(result.stdout)
+            print(selected_var)
 
             # 检查返回状态
             if result.returncode != 0:
@@ -615,7 +623,13 @@ def download(filename):
 async def chat_handler():
     """处理大模型对话请求"""
     try:
-        df = pd.read_csv(session.get('preparation_filepath'))
+        print("++++++++++++++++++++++=")
+        print(selected_var)
+        variable_names = selected_var.split(',')
+        print(variable_names)
+
+        # 读取指定列的数据
+        df = pd.read_csv(session.get('preparation_filepath'), usecols=variable_names)
     
         # 初始化存储统计信息的列表
         statistics = []
@@ -679,25 +693,25 @@ def backdoor_adjustment():
 
         # 构造提示词，明确要求严格JSON格式
         prompt = f"""作为因果推断专家，请基于以下因果图分析：
-        
-【因果图结构】
-变量列表：{', '.join(data['nodes'])}
-因果边：
-{edges_str}
+                        
+                【因果图结构】
+                变量列表：{', '.join(data['nodes'])}
+                因果边：
+                {edges_str}
 
-【分析任务】
-确定在估计 {data['cause_var']} 对 {data['effect_var']} 的因果效应时，需要调整的最小变量集合。
+                【分析任务】
+                确定在估计 {data['cause_var']} 对 {data['effect_var']} 的因果效应时，需要调整的最小变量集合。
 
-请严格遵循后门准则：
-1. ​**阻断所有非因果路径**​（后门路径）:  
-   - 使用d-分离原则识别所有从 {data['cause_var']} 到 {data['effect_var']} 的 ​**非因果路径**​（即指向 {data['cause_var']} 的路径）。
-   - 确保调整集合阻断这些路径（如链结构 $i \rightarrow m \rightarrow j$ 或分叉结构 $i \leftarrow m \rightarrow j$ 需包含$m$，对撞结构 $i \rightarrow m \leftarrow j$ 需不含$m$及其后代）。
+                请严格遵循后门准则：
+                1. ​**阻断所有非因果路径**​（后门路径）:  
+                - 使用d-分离原则识别所有从 {data['cause_var']} 到 {data['effect_var']} 的 ​**非因果路径**​（即指向 {data['cause_var']} 的路径）。
+                - 确保调整集合阻断这些路径（如链结构 $i \rightarrow m \rightarrow j$ 或分叉结构 $i \leftarrow m \rightarrow j$ 需包含$m$，对撞结构 $i \rightarrow m \leftarrow j$ 需不含$m$及其后代）。
 
-2. ​**不包含任何中介变量**​（即 {data['cause_var']} 的后代）:  
-   - 排除所有位于 {data['cause_var']} 到 {data['effect_var']} 因果路径上的变量。
+                2. ​**不包含任何中介变量**​（即 {data['cause_var']} 的后代）:  
+                - 排除所有位于 {data['cause_var']} 到 {data['effect_var']} 因果路径上的变量。
 
-请返回严格符合以下JSON格式的内容，不要包含任何其他文本或注释：
-{{"adjustment_set": [...]}}"""
+                请返回严格符合以下JSON格式的内容，不要包含任何其他文本或注释：
+                {{"adjustment_set": [...]}}"""
 
         # 调用大模型
         messages = [

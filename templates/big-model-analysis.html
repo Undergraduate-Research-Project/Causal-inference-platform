@@ -252,7 +252,7 @@
         <div class="section_graph">
             <h3>因果效应结果</h3>
             <div id="result-display" class="graph-placeholder_1">
-                因果图预览区域
+
             </div>
         </div>
     </div>
@@ -566,7 +566,9 @@
                 
                 Plotly.newPlot(resultDiv, traces, {
                     title: '因果效应指标',
-                    yaxis: { title: '数值' }
+                    yaxis: { title: '数值' },
+                    width: 600,  // 设置图表宽度
+                    height: 320  // 设置图表高度
                 });
             }
     </script>

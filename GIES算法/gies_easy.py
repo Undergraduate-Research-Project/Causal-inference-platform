@@ -9,20 +9,26 @@ def main():
     parser.add_argument('--data_file', required=True, help="数据文件路径")
     parser.add_argument('--output_file', required=True, help="输出结果的保存路径")
     parser.add_argument('--background_edge', required=True, help="666")
+    parser.add_argument('--variable_names', required=True, help="包含变量名")
 
     # 解析参数
     args = parser.parse_args()
-    data_file = args.data_file
     output_file = args.output_file
     background_edge_json = args.background_edge
 
     # 加载数据文件
     print("加载数据文件...")
-    data_df = pd.read_csv(data_file)
+    # 将逗号分隔的字符串转换为列表
+    variable_names = args.variable_names.split(',')
+
+    # 读取指定列的数据
+    data_df = pd.read_csv(args.data_file, usecols=variable_names)
     variable_names = data_df.columns.tolist()  # 获取列名作为变量名
-    data = [data_df.values]  # 转为 NumPy 数组（作为单环境数据传入）
+    data = data_df.values  # 转为 NumPy 数组（作为单环境数据传入）
     print(f"数据维度: {data_df.shape}")
     print(f"变量名称: {variable_names}")
+    print("****************************")
+    print(data)
 
     # 设置干预信息（如果没有干预，则传空列表）
     interventions = [[]]

@@ -13,16 +13,23 @@ def main():
     parser.add_argument('--data_file', required=True, help="数据文件路径")
     parser.add_argument('--output_file', required=True, help="输出结果的保存路径")
     parser.add_argument('--background_edge', required=True, help="666")
+    parser.add_argument('--variable_names', required=True, help="包含变量名")
     print(9,flush=True)
     # 解析参数
     args = parser.parse_args()
-    data_file = args.data_file
     output_file = args.output_file
     background_edge_json = args.background_edge
     print(background_edge_json)
     # 加载数据文件
     print("加载数据文件...")
-    data_df = pd.read_csv(data_file)
+    # 将逗号分隔的字符串转换为列表
+    variable_names = args.variable_names.split(',')
+
+    # 读取指定列的数据
+    data_df = pd.read_csv(args.data_file, usecols=variable_names)
+
+    # 打印读取的数据
+    print(data_df)
     variable_names = data_df.columns.tolist()  # 获取列名作为变量名
     data = data_df.values  # 转为 NumPy 数组
     print(f"数据维度: {data.shape}")

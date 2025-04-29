@@ -1,14 +1,6 @@
 ﻿Node1,Node2,Endpoint1,Endpoint2
-Rings,Shell weight,TAIL,ARROW
 Rings,Height,TAIL,ARROW
-Length,Viscera weight,TAIL,ARROW
-Diameter,Shell weight,TAIL,ARROW
-Height,Shell weight,TAIL,ARROW
-Whole weight,Shell weight,TAIL,ARROW
-Shucked weight,Shell weight,TAIL,ARROW
-Viscera weight,Shell weight,TAIL,ARROW
+Length,Shell weight,TAIL,ARROW
+Length,Height,TAIL,ARROW
+Shell weight,Height,TAIL,ARROW
 Diameter,Height,TAIL,ARROW
-Whole weight,Height,TAIL,ARROW
-Whole weight,Shucked weight,TAIL,ARROW
-Whole weight,Viscera weight,TAIL,ARROW
-Shucked weight,Viscera weight,TAIL,ARROW
