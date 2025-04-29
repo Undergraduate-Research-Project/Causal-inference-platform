@@ -9,6 +9,45 @@
     <link href="https://unpkg.com/vis-network/styles/vis-network.min.css" rel="stylesheet" />
     <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
     <style>
+         /* 新增加载动画样式 */
+         .graph-placeholder {
+            position: relative;  /* 添加相对定位 */
+            /* 原有其他样式保持不变 */
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(240, 240, 240, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .loading-text {
+            margin-top: 10px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
 
 
         /* 左侧交互区域 */
@@ -22,6 +61,36 @@
             flex-direction: column;
         }
 
+        /* result-display1*/
+        #result-display1 {
+            position: relative;  /* 必须设置相对定位 */
+            min-height: 80px;    /* 最小高度保证加载层可见 */
+            height: auto;        /* 高度自适应内容 */
+            padding: 15px;       /* 内边距增加可读性 */
+            margin: 10px 0;      /* 外边距分隔元素 */
+            background: #f0f0f0;/* 浅灰色背景 */
+            border-radius: 8px;  /* 圆角效果 */
+            border: 1px solid #e0e0e0; /* 浅灰色边框 */
+            overflow: auto;      /* 内容溢出时显示滚动条 */
+        }
+
+        /* 结果文本样式 */
+        #result-display1 strong {
+            color: #2c3e50;      /* 深蓝色强调文字 */
+            font-size: 1.1em;
+        }
+
+        #result-display1 div {
+            line-height: 1.6;    /* 行高增加可读性 */
+            color: #4a4a4a;      /* 深灰色文字 */
+            font-size: 0.95em;
+            margin-top: 10px;
+        }
+
+        /* 加载层适配 */
+        #result-display1 .loading-overlay {
+            background: #f0f0f0; /* 与背景色一致的半透明层 */
+        }
         /* 右侧布局 */
         .right-panel {
             width: 50%;
@@ -362,8 +431,11 @@
     async function sendMessage() {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 600000); // 60秒超时
-                
+            // 获取预览容器
+            const previewDiv = document.getElementById('causal-graph-preview');
+
             try {
+                showLoading('causal-graph-preview', '正在生成因果图，可能需要较长时间...');
                 console.log("begin!!!!!!!!!!!!!!!")
                 const response = await fetch('/api/chat', {
                     method: 'POST',
@@ -389,6 +461,8 @@
                     nodes: data.nodes,
                     edges: data.edges
                 };
+                 // 清除加载状态
+                hideLoading('causal-graph-preview');
                 renderGraph(data.nodes, data.edges);
                 // 移除加载状态
                 // chatBox.removeChild(loadingMsg);
@@ -400,6 +474,8 @@
                 // chatBox.appendChild(botMsg);
 
             } catch (error) {
+                hideLoading('causal-graph-preview');
+                previewDiv.innerHTML = '<div class="graph-placeholder">数据加载失败，请重试</div>';
                 if (error.name === 'AbortError') {
                     showTimeoutMessage(); // 显示超时提示
                 }
@@ -472,9 +548,15 @@
                     alert("请先选择变量并生成因果图");
                     return;
                 }
-
+                document.getElementById('result-display1').innerHTML = '';
+                showLoading('result-display1', '正在筛选后门调整集...');
                 // 调用独立分析函数
-                analyzeBackdoor(causeVar, effectVar);
+                analyzeBackdoor(causeVar, effectVar)
+                    .finally(() => {
+                        // 无论成功失败都隐藏加载状态
+                        hideLoading('result-display1');
+                    });
+
             }
 
             // analyzeBackdoor函数
@@ -571,6 +653,27 @@
                     height: 320  // 设置图表高度
                 });
             }
+
+             // 通用加载状态控制函数
+             function showLoading(containerId, text = '正在分析中，请稍候...') {
+                const container = document.getElementById(containerId);
+                container.style.position = 'relative';
+                container.innerHTML += `
+                    <div class="loading-overlay">
+                        <div class="loading-spinner"></div>
+                        <div class="loading-text">${text}</div>
+                    </div>
+                `;
+            }
+
+            function hideLoading(containerId) {
+                const container = document.getElementById(containerId);
+                const overlay = container.querySelector('.loading-overlay');
+                if (overlay) {
+                    overlay.remove();
+                }
+            }
+
     </script>
 </body>
 </html>
