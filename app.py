@@ -480,6 +480,22 @@ def get_statistics():
     except Exception as e:
         # 错误处理
         return jsonify({"error": str(e)}), 500
+    
+@app.route('/api/get-var', methods=['GET'])
+def get_var():
+    try:
+        # 获取CSV的统计信息
+        preparation_filepath = session.get('preparation_filepath')
+        stats = get_statistics_from_csv(preparation_filepath)
+        selected_vars = selected_var.split(',')
+    
+        # 过滤statistics列表，只保留name在selected_vars中的项
+        filtered_stats = [stat for stat in stats if stat['name'] in selected_vars]
+    
+        return jsonify(filtered_stats)
+    except Exception as e:
+        # 错误处理
+        return jsonify({"error": str(e)}), 500
 
 
 
@@ -598,6 +614,20 @@ def get_csv_data():
         nodes, edges = [], []
 
     return jsonify({"csv_data": csv_data, "nodes": nodes, "edges": edges})
+
+
+@app.route('/get_csv_data_new', methods=['GET'])
+def get_csv_data_new():
+    output_file_path = os.path.join('static', 'result_new.csv')
+
+    if not os.path.exists(output_file_path):
+        return jsonify({"error": "结果文件未找到"}), 404
+
+    # 读取 CSV 文件
+    df = pd.read_csv(output_file_path)
+    csv_data = df.to_dict(orient='records')  # 用于表格展示
+
+    return jsonify(csv_data)
 
 @app.route('/big-model-analysis.html')
 def big_model_analysis():
