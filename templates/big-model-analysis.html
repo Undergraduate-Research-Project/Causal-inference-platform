@@ -259,6 +259,10 @@
 </div>
 
     <script>
+        let csvData;
+        // 动态加载变量选项
+        let causeVar = "";
+        let effectVar = ""; 
          function renderGraph(rawNodes, rawEdges) {
             // 将原始节点数据转换为 Vis.js 格式
             const nodes = rawNodes.map((label, index) => ({
@@ -341,9 +345,7 @@
             };
 
             // 渲染容器
-            console.log("8888888888");
             const container = document.getElementById('causal-graph-preview');
-            console.log("`````````````");
 
             // 创建图形数据
             const data = {
@@ -390,14 +392,23 @@
                     edges: data.edges
                 };
                 renderGraph(data.nodes, data.edges);
-                // 移除加载状态
-                // chatBox.removeChild(loadingMsg);
-                
-                // 添加真实响应
-                // const botMsg = document.createElement('div');
-                // botMsg.className = 'message bot-message';
-                // botMsg.textContent = data.content;
-                // chatBox.appendChild(botMsg);
+                        // 获取分析结果并显示
+                function fetchData() {
+                    fetch('/get_csv_data_new')
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log("Data received:", data);
+                            if (data.error) {
+                                alert(data.error);
+                            } else {
+                                console.log("*****************")
+                                console.log(data);
+                                csvData = data;
+                            }
+                        })
+                        .catch(error => console.error("获取数据时出错:", error));
+                }
+                fetchData();
 
             } catch (error) {
                 if (error.name === 'AbortError') {
@@ -408,58 +419,53 @@
             
         }
 
-    
+        document.addEventListener('DOMContentLoaded', function() {
+            // 从后端接口获取数据集
+            fetch('/api/get-var')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('网络错误或接口不可用');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log("++++++++++++++==")
+                        console.log(data);
+                        // 动态填充下拉菜单
+                        const populateSelect = (selectId, options) => {
+                            const select = document.getElementById(selectId);
+                            select.innerHTML = options.map(option => 
+                                `<option value="${option}">${option}</option>`
+                            ).join('');
+                        };
+                        populateSelect('effect-var', []);
+                        const namesString = data.map(data => data.name).join(',');
+                        const namesArray = namesString.split(',');
+                        namesArray.unshift('');
+                        populateSelect('cause-var', namesArray);
 
-
-    // 动态加载变量选项
-    var causeVar = "";
-            var effectVar = ""; 
-            document.addEventListener('DOMContentLoaded', function() {
-                // 从后端接口获取数据集
-                fetch('/api/get-statistics')
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error('网络错误或接口不可用');
-                            }
-                            return response.json();
-                        })
-                        .then(data => {
-                            console.log(data);
-                            // 动态填充下拉菜单
-                            const populateSelect = (selectId) => {
-                                const select = document.getElementById(selectId);
-                                select.innerHTML = data.map(v => 
-                                    `<option value="${v.name}">${v.name}</option>`
-                                ).join('');
-                            }
-
-                            populateSelect('cause-var');
-                            populateSelect('effect-var');
-                        })
-                        .catch(error => {
-                            console.error('数据加载错误:', error);
-                            document.getElementById('dataset-config').innerHTML = '<p>数据加载失败，请稍后重试。</p>';
+                        // 监听第一个下拉菜单的变化
+                        document.getElementById('cause-var').addEventListener('change', (event) => {
+                            console.log("1111111111")
+                            console.log(csvData)
+                            const selectedValue = event.target.value;
+                            
+                            // 根据选择的第一个变量更新第二个下拉菜单
+                            const filteredOptions = csvData
+                                .filter(item => item.Endpoint1 === 'TAIL' && item.Endpoint2 === 'ARROW' && item.Node1 === selectedValue)
+                                .map(item => item.Node2);
+                            
+                            populateSelect('effect-var', filteredOptions);
                         });
+                        causeVar = document.getElementById('cause-var').value;
+                        effectVar = document.getElementById('effect-var').value;
+                    })
+                    .catch(error => {
+                        console.error('数据加载错误:', error);
+                        document.getElementById('dataset-config').innerHTML = '<p>数据加载失败，请稍后重试。</p>';
+                    });
 
-            });
-
-            // 监听选择变化
-            document.querySelectorAll('.var-selector').forEach(select => {
-                select.addEventListener('change', function() {
-                    const payload = {
-                        cause_var: document.getElementById('cause-var').value,
-                        effect_var: document.getElementById('effect-var').value
-                    };
-                    
-                    console.log("++++++++++++++++++++");
-                    console.log(document.getElementById('cause-var').value);
-                    console.log(document.getElementById('effect-var').value);
-                    // 获取选中的变量
-                    causeVar = document.getElementById('cause-var').value;
-                    effectVar = document.getElementById('effect-var').value;
-                    
-                });
-            });
+        });
 
             
             function generateCausalGraph() {
