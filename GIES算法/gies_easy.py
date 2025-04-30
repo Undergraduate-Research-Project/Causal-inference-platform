@@ -2,6 +2,8 @@ import argparse
 import csv
 import pandas as pd
 from gies import fit_bic
+import json
+import numpy as np
 
 def main():
     # 创建命令行参数解析器
@@ -15,16 +17,32 @@ def main():
     args = parser.parse_args()
     output_file = args.output_file
     background_edge_json = args.background_edge
+    variable_names = args.variable_names.split(',')
+
+    print(background_edge_json)
+    # 解析背景边信息
+    background_edges = json.loads(background_edge_json)  # 将背景边的JSON字符串转化为Python对象
+
+    # 构建邻接矩阵 A0
+    A0 = np.zeros((len(variable_names), len(variable_names)))  # 初始化邻接矩阵
+    for edge in background_edges:
+        # 获取 'from' 和 'to' 字段对应的变量名
+        i = variable_names.index(edge['from'])
+        j = variable_names.index(edge['to'])
+        A0[i, j] = 1  # 添加背景边，表示 i -> j
+
+    print(A0)
+
 
     # 加载数据文件
     print("加载数据文件...")
     # 将逗号分隔的字符串转换为列表
-    variable_names = args.variable_names.split(',')
+    
 
     # 读取指定列的数据
     data_df = pd.read_csv(args.data_file, usecols=variable_names)
     variable_names = data_df.columns.tolist()  # 获取列名作为变量名
-    data = data_df.values  # 转为 NumPy 数组（作为单环境数据传入）
+    data = [data_df.values]  # 转为 NumPy 数组（作为单环境数据传入）
     print(f"数据维度: {data_df.shape}")
     print(f"变量名称: {variable_names}")
     print("****************************")
@@ -38,7 +56,9 @@ def main():
     adjacency_matrix, total_score = fit_bic(
         data,
         interventions,
+        A0 = A0 # 背景边传入
     )
+
     print("GIES算法运行完成！")
     print("总得分:", total_score)
 
