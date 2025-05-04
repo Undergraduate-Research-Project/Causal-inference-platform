@@ -341,13 +341,13 @@
         <a href="data-upload.html"><i class="fas fa-upload"></i><span>数据上传</span></a>
         <a href="data-preparation.html"><i class="fas fa-cogs"></i><span>数据准备</span></a>
         <a href="statistical-analysis.html"><i class="fas fa-chart-bar"></i><span>统计分析</span></a>
-        <a href="causal-analysis.html"><i class="fas fa-brain"></i><span>因果分析</span></a>
-        <a href="big-model-analysis.html"><i class="fas fa-database"></i><span>大模型分析</span></a>
+        <a href="causal-analysis.html"><i class="fas fa-brain"></i><span>数据驱动因果</span></a>
+        <a href="big-model-analysis.html"><i class="fas fa-database"></i><span>语义理解因果</span></a>
         <a href="favorites.html"><i class="fas fa-star"></i><span>收藏夹</span></a>
         <a id="settings-button" href="javascript:void(0);"><i class="fas fa-cog"></i></a>
     </div>
     <div class="content">
-        <h1>因果分析</h1>
+        <h1>数据驱动因果分析</h1>
     
         {% if error_message %}
             <p class="error-message">{{ error_message }}</p>
@@ -390,8 +390,8 @@
                         <option value="pc">PC算法</option>
                         <option value="gies">GIES算法</option>
                     </select>
-                    <button type="submit" class="button_mid" id="analyzeButton">经典算法分析</button>
-                    <button class="button" onclick="location.href='big-model-analysis.html'">大模型分析</button>
+                    <button type="submit" class="button_mid" id="analyzeButton">数据驱动分析</button>
+                    <button class="button" onclick="location.href='big-model-analysis.html'">语义引擎优化</button>
                 </div>
             </form>
         </div>

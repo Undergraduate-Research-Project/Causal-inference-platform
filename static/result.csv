@@ -1,28 +1,5 @@
 ﻿Node1,Node2,Endpoint1,Endpoint2
-Rings,Whole weight,TAIL,ARROW
-Length,Shell weight,TAIL,ARROW
-Length,Diameter,TAIL,ARROW
-Length,Shucked weight,TAIL,ARROW
-Length,Viscera weight,TAIL,ARROW
-Shell weight,Rings,TAIL,ARROW
-Shell weight,Whole weight,TAIL,ARROW
-Diameter,Rings,TAIL,ARROW
-Diameter,Length,TAIL,ARROW
-Diameter,Shell weight,TAIL,ARROW
-Diameter,Height,TAIL,ARROW
-Diameter,Viscera weight,TAIL,ARROW
-Height,Rings,TAIL,ARROW
-Height,Shell weight,TAIL,ARROW
-Height,Diameter,TAIL,ARROW
-Height,Viscera weight,TAIL,ARROW
-Shucked weight,Rings,TAIL,ARROW
-Shucked weight,Length,TAIL,ARROW
-Shucked weight,Shell weight,TAIL,ARROW
-Shucked weight,Whole weight,TAIL,ARROW
-Shucked weight,Viscera weight,TAIL,ARROW
-Viscera weight,Length,TAIL,ARROW
-Viscera weight,Shell weight,TAIL,ARROW
-Viscera weight,Diameter,TAIL,ARROW
-Viscera weight,Height,TAIL,ARROW
-Viscera weight,Whole weight,TAIL,ARROW
-Viscera weight,Shucked weight,TAIL,ARROW
+Rings,Shell weight,TAIL,TAIL
+Length,Shell weight,TAIL,TAIL
+Length,Diameter,TAIL,TAIL
+Shell weight,Diameter,TAIL,TAIL
