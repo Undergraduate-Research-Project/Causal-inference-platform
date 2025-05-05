@@ -1,2 +1,10 @@
 ﻿Node1,Node2,Endpoint1,Endpoint2
-Length,Shell weight,TAIL,ARROW
+Rings,Shell weight,TAIL,ARROW
+Rings,Height,TAIL,ARROW
+Length,Diameter,TAIL,ARROW
+Length,Whole weight,TAIL,ARROW
+Shell weight,Diameter,TAIL,ARROW
+Shell weight,Height,TAIL,ARROW
+Whole weight,Shell weight,TAIL,ARROW
+Diameter,Height,TAIL,ARROW
+Whole weight,Height,TAIL,ARROW
