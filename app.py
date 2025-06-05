@@ -794,6 +794,45 @@ async def chat_handler():
         return jsonify({"error": "Internal server error"}), 500
 
 
+@app.route('/api/analyze-causal-results', methods=['POST'])
+def analyze_causal_results():
+    """分析因果推断结果的API"""
+    try:
+        data = request.get_json()
+        causal_data = data.get('causal_data', '')
+        prompt = data.get('prompt', '')
+        
+        if not causal_data:
+            return jsonify({
+                'success': False,
+                'error': '没有提供因果数据'
+            }), 400
+        
+        # 构建完整的提示词
+        full_prompt = f"{prompt}\n\n因果关系数据:\n{causal_data}\n\n请详细分析这些因果关系，并给出具体的结论和建议。"
+        
+        # 调用大模型进行分析
+        analysis_result = client.analyze_causal_data(full_prompt)
+        
+        if analysis_result:
+            return jsonify({
+                'success': True,
+                'analysis': analysis_result
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': '大模型分析失败'
+            }), 500
+            
+    except Exception as e:
+        logging.error(f"因果分析API错误: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': f'分析过程中发生错误: {str(e)}'
+        }), 500
+
+
 @app.route('/analyze_two_factor', methods=['POST'])
 def analyze_two_factor():
     # 获取请求中的JSON数据

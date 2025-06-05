@@ -49,6 +49,91 @@
             100% { transform: rotate(360deg); }
         }
 
+        /* 弹窗样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: #000;
+        }
+
+        .modal-body {
+            line-height: 1.6;
+            color: #555;
+            font-size: 16px;
+        }
+
+        .analysis-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-left: 4px solid #3498db;
+            border-radius: 5px;
+        }
+
+        .analysis-title {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .causal-data-preview {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 14px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
 
         /* 左侧交互区域 */
         .left-panel {
@@ -633,6 +718,9 @@
                     } else {
                         // 展示结果到页面
                         displayResult(data);
+                        
+                        // 调用大模型分析功能
+                        performCausalAnalysis();
                     }
                 })
                 .catch(error => {
@@ -680,6 +768,147 @@
                 }
             }
 
+            // 大模型分析函数
+            async function performCausalAnalysis() {
+                try {
+                    // 显示弹窗
+                    showAnalysisModal();
+                    
+                    // 检查必需的DOM元素是否存在
+                    const loadingElement = document.getElementById('analysisLoading');
+                    const resultElement = document.getElementById('analysisResult');
+                    
+                    if (!loadingElement || !resultElement) {
+                        console.error('所需的DOM元素未找到');
+                        return;
+                    }
+                    
+                    // 显示加载状态
+                    loadingElement.style.display = 'flex';
+                    resultElement.innerHTML = '';
+                    
+                    // 读取result_new.csv文件内容
+                    const response = await fetch('/static/result_new.csv');
+                    const csvContent = await response.text();
+                    
+                    // 在弹窗中显示数据预览
+                    displayCausalDataPreview(csvContent);
+                    
+                    // 发送给大模型分析
+                    const analysisResponse = await fetch('/api/analyze-causal-results', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            causal_data: csvContent,
+                            prompt: "这是我基于教育场景下的数据集进行因果推断得到的因果图，帮我分析下可以从中得到哪些结论。"
+                        })
+                    });
+                    
+                    const analysisResult = await analysisResponse.json();
+                    
+                    // 隐藏加载状态并显示结果
+                    loadingElement.style.display = 'none';
+                    
+                    if (analysisResult.success) {
+                        resultElement.innerHTML = 
+                            `<div style="white-space: pre-wrap; line-height: 1.8;">${analysisResult.analysis}</div>`;
+                    } else {
+                        resultElement.innerHTML = 
+                            `<div style="color: #e74c3c;">分析失败: ${analysisResult.error}</div>`;
+                    }
+                    
+                } catch (error) {
+                    console.error('分析过程出错:', error);
+                    const loadingElement = document.getElementById('analysisLoading');
+                    const resultElement = document.getElementById('analysisResult');
+                    
+                    if (loadingElement) loadingElement.style.display = 'none';
+                    if (resultElement) {
+                        resultElement.innerHTML = 
+                            `<div style="color: #e74c3c;">分析过程出错: ${error.message}</div>`;
+                    }
+                }
+            }
+
+            // 显示数据预览
+            function displayCausalDataPreview(csvContent) {
+                const previewElement = document.getElementById('causalDataPreview');
+                if (!previewElement) {
+                    console.error('数据预览元素未找到');
+                    return;
+                }
+                
+                const lines = csvContent.trim().split('\n');
+                const maxLines = 10; // 最多显示10行
+                const preview = lines.slice(0, maxLines).join('\n');
+                const remaining = lines.length - maxLines;
+                
+                let previewText = preview;
+                if (remaining > 0) {
+                    previewText += `\n... 还有 ${remaining} 行数据`;
+                }
+                
+                previewElement.textContent = previewText;
+            }
+
+            // 显示弹窗
+            function showAnalysisModal() {
+                const modal = document.getElementById('analysisModal');
+                const resultElement = document.getElementById('analysisResult');
+                const previewElement = document.getElementById('causalDataPreview');
+                const loadingElement = document.getElementById('analysisLoading');
+                
+                if (modal) modal.style.display = 'block';
+                
+                // 重置内容
+                if (resultElement) resultElement.innerHTML = '';
+                if (previewElement) previewElement.textContent = '';
+                if (loadingElement) loadingElement.style.display = 'none';
+            }
+
+            // 关闭弹窗
+            function closeAnalysisModal() {
+                document.getElementById('analysisModal').style.display = 'none';
+            }
+
+            // 点击弹窗外部关闭
+            window.onclick = function(event) {
+                const modal = document.getElementById('analysisModal');
+                if (event.target === modal) {
+                    closeAnalysisModal();
+                }
+            }
     </script>
+
+    <!-- 大模型分析结果弹窗 -->
+    <div id="analysisModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">因果图智能分析结果</h2>
+                <span class="close" onclick="closeAnalysisModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="analysis-section">
+                    <div class="analysis-title">数据概览</div>
+                    <div id="causalDataPreview" class="causal-data-preview">
+                        <!-- 因果关系数据预览 -->
+                    </div>
+                </div>
+                <div class="analysis-section">
+                    <div class="analysis-title">智能分析结果</div>
+                    <div class="loading-overlay" id="analysisLoading" style="display: none;">
+                        <div class="loading-spinner"></div>
+                        <div class="loading-text">正在分析因果关系，请稍候...</div>
+                    </div>
+                    <div id="analysisResult">
+                        <!-- 大模型分析结果 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
