@@ -122,48 +122,174 @@
             <h2>Login</h2>
         </div>
         <form class="login-form" id="login-form">
-            <input type="text" name="username" placeholder="Username" required>
-            <input type="password" name="password" placeholder="Password" required>
-            <button type="submit">Login</button>
-            <p class="error-msg" id="error-msg">Incorrect username or password</p>
+            <input type="text" name="username" placeholder="用户名" required>
+            <input type="password" name="password" placeholder="密码" required>
+            <button type="submit">登录</button>
+            <p class="error-msg" id="error-msg" style="display: none; color: red;"></p>
+            <p class="success-msg" id="success-msg" style="display: none; color: green;"></p>
         </form>
         <div class="register-link">
-            <a href="signup.html">Don't have an account? Sign up</a>
+            <a href="#" id="show-register">没有账户？注册</a>
+        </div>
+        
+        <!-- 注册表单 -->
+        <form class="login-form" id="register-form" style="display: none;">
+            <input type="text" name="reg-username" placeholder="用户名" required>
+            <input type="email" name="reg-email" placeholder="邮箱（可选）">
+            <input type="password" name="reg-password" placeholder="密码" required>
+            <input type="password" name="reg-confirm-password" placeholder="确认密码" required>
+            <button type="submit">注册</button>
+            <p class="error-msg" id="reg-error-msg" style="display: none; color: red;"></p>
+            <p class="success-msg" id="reg-success-msg" style="display: none; color: green;"></p>
+        </form>
+        <div class="register-link" id="login-link" style="display: none;">
+            <a href="#" id="show-login">已有账户？登录</a>
         </div>
     </div>
 
     <script>
+        // 登录表单处理
         document.getElementById("login-form").addEventListener("submit", function(event) {
-            event.preventDefault(); // Prevent default form submission
-            var username = document.getElementsByName("username")[0].value;
-            var password = document.getElementsByName("password")[0].value;
-
-            // Simulate user database and password verification
-            var users = [
-                { username: "admin", passwordHash: "5f4dcc3b5aa765d61d8327deb882cf99" } // Username: admin, Password: password hash
-                // You can add more users here
-            ];
-
-            var user = users.find(u => u.username === username);
-
-            if (user) {
-                var hashedPassword = md5(password); // Hash the password using MD5
-                if (hashedPassword === user.passwordHash) {
-                    // Password matches, login successful
-                    location.href = "index.html"; // Redirect to homepage
+            event.preventDefault();
+            
+            const username = document.getElementsByName("username")[0].value;
+            const password = document.getElementsByName("password")[0].value;
+            const errorMsg = document.getElementById("error-msg");
+            const successMsg = document.getElementById("success-msg");
+            
+            // 隐藏之前的消息
+            errorMsg.style.display = "none";
+            successMsg.style.display = "none";
+            
+            // 发送登录请求
+            fetch('/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: username,
+                    password: password
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    successMsg.textContent = data.message;
+                    successMsg.style.display = "block";
+                    
+                    // 延迟跳转到主页
+                    setTimeout(() => {
+                        window.location.href = data.redirect_url;
+                    }, 1000);
                 } else {
-                    // Password doesn't match, display error message
-                    document.getElementById("error-msg").style.display = "block";
+                    errorMsg.textContent = data.message;
+                    errorMsg.style.display = "block";
                 }
-            } else {
-                // Username not found, display error message
-                document.getElementById("error-msg").style.display = "block";
-            }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                errorMsg.textContent = "登录请求失败，请稍后重试";
+                errorMsg.style.display = "block";
+            });
         });
+        
+        // 注册表单处理
+        document.getElementById("register-form").addEventListener("submit", function(event) {
+            event.preventDefault();
+            
+            const username = document.getElementsByName("reg-username")[0].value;
+            const email = document.getElementsByName("reg-email")[0].value;
+            const password = document.getElementsByName("reg-password")[0].value;
+            const confirmPassword = document.getElementsByName("reg-confirm-password")[0].value;
+            const errorMsg = document.getElementById("reg-error-msg");
+            const successMsg = document.getElementById("reg-success-msg");
+            
+            // 隐藏之前的消息
+            errorMsg.style.display = "none";
+            successMsg.style.display = "none";
+            
+            // 验证密码确认
+            if (password !== confirmPassword) {
+                errorMsg.textContent = "两次输入的密码不一致";
+                errorMsg.style.display = "block";
+                return;
+            }
+            
+            // 发送注册请求
+            fetch('/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: username,
+                    email: email,
+                    password: password
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    successMsg.textContent = data.message;
+                    successMsg.style.display = "block";
+                    
+                    // 清空表单
+                    document.getElementById("register-form").reset();
+                    
+                    // 延迟切换到登录表单
+                    setTimeout(() => {
+                        showLogin();
+                    }, 2000);
+                } else {
+                    errorMsg.textContent = data.message;
+                    errorMsg.style.display = "block";
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                errorMsg.textContent = "注册请求失败，请稍后重试";
+                errorMsg.style.display = "block";
+            });
+        });
+        
+        // 显示注册表单
+        document.getElementById("show-register").addEventListener("click", function(event) {
+            event.preventDefault();
+            showRegister();
+        });
+        
+        // 显示登录表单
+        document.getElementById("show-login").addEventListener("click", function(event) {
+            event.preventDefault();
+            showLogin();
+        });
+        
+        function showRegister() {
+            document.getElementById("login-form").style.display = "none";
+            document.querySelector(".register-link").style.display = "none";
+            document.getElementById("register-form").style.display = "block";
+            document.getElementById("login-link").style.display = "block";
+            document.querySelector(".login-header h2").textContent = "注册";
+            
+            // 清空错误消息
+            document.getElementById("error-msg").style.display = "none";
+            document.getElementById("success-msg").style.display = "none";
+        }
+        
+        function showLogin() {
+            document.getElementById("register-form").style.display = "none";
+            document.getElementById("login-link").style.display = "none";
+            document.getElementById("login-form").style.display = "block";
+            document.querySelector(".register-link").style.display = "block";
+            document.querySelector(".login-header h2").textContent = "登录";
+            
+            // 清空错误消息
+            document.getElementById("reg-error-msg").style.display = "none";
+            document.getElementById("reg-success-msg").style.display = "none";
+        }
     </script>
 
-    <!-- Include MD5 library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.18.0/js/md5.min.js"></script>
     
 </body>
 

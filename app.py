@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, send_from_directory, session, jsonify, send_file
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory, session, jsonify, send_file, flash
 import os
 import pandas as pd
 import numpy as np
@@ -10,13 +10,20 @@ from datetime import datetime
 from column_type_detector import detect_column_types as detect_analysis_types 
 from detect_type import detect_column_types  
 from EI.calculator import *
-from api.deepseek import DeepSeekClient  
+from api.deepseek import DeepSeekClient
+from api.huoban_db import HuobanDB
+from config import config
+
+# 获取配置
+env = os.environ.get('FLASK_ENV', 'development')
+app_config = config[env]  
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'
-UPLOAD_FOLDER = 'uploads'
+app.config.from_object(app_config)
+UPLOAD_FOLDER = app.config['UPLOAD_FOLDER']
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-client = DeepSeekClient()  
+client = DeepSeekClient()
+db = HuobanDB(app_config)  # 使用配置初始化数据库连接
 selected_var = ""
 
 
@@ -30,11 +37,114 @@ if not os.path.exists('static'):
 def log_in():
     return render_template('log-in.html')
 
+@app.route('/login', methods=['POST'])
+def login():
+    """处理用户登录"""
+    try:
+        data = request.get_json()
+        username = data.get('username')
+        password = data.get('password')
+        print("*****************")
+        print(username)
+        print(password)
+        
+        if not username or not password:
+            return jsonify({
+                'success': False,
+                'message': '用户名和密码不能为空'
+            }), 400
+        
+        # 使用火伴API进行用户认证
+        auth_result = db.authenticate_user(username, password)
+        
+        if auth_result['success']:
+            # 登录成功，设置会话
+            session['logged_in'] = True
+            session['username'] = username
+            session['user_id'] = auth_result['user']['user_id']
+            
+            return jsonify({
+                'success': True,
+                'message': '登录成功',
+                'redirect_url': url_for('index')
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': auth_result.get('message', '登录失败')
+            }), 401
+            
+    except Exception as e:
+        logging.error(f"登录处理错误: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': '登录过程中发生错误'
+        }), 500
+
+@app.route('/register', methods=['POST'])
+def register():
+    """处理用户注册"""
+    try:
+        data = request.get_json()
+        username = data.get('username')
+        password = data.get('password')
+        email = data.get('email', '')
+        
+        if not username or not password:
+            return jsonify({
+                'success': False,
+                'message': '用户名和密码不能为空'
+            }), 400
+        
+        # 准备额外的用户数据
+        additional_data = {}
+        if email:
+            additional_data['email'] = email
+        
+        # 使用火伴API进行用户注册
+        register_result = db.register_user(username, password, additional_data)
+        
+        if register_result['success']:
+            return jsonify({
+                'success': True,
+                'message': '注册成功，请登录',
+                'user_id': register_result.get('user_id')
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': register_result.get('message', '注册失败')
+            }), 400
+            
+    except Exception as e:
+        logging.error(f"注册处理错误: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': '注册过程中发生错误'
+        }), 500
+
+@app.route('/logout')
+def logout():
+    """用户登出"""
+    session.clear()
+    return redirect(url_for('log_in'))
+
+def login_required(f):
+    """登录装饰器，保护需要登录的路由"""
+    def decorated_function(*args, **kwargs):
+        if not session.get('logged_in'):
+            return redirect(url_for('log_in'))
+        return f(*args, **kwargs)
+    decorated_function.__name__ = f.__name__
+    return decorated_function
+
 @app.route('/index.html')
+@login_required
 def index():
     return render_template('index.html')
 
 @app.route('/data-upload.html', methods=['GET', 'POST'])
+@login_required
 def upload_file():
     if request.method == 'POST':
         if 'file' not in request.files:
@@ -201,6 +311,7 @@ def normal_analysis_process(feature, df, x_column, y_column):
     return {'description': f"No significant result found for feature {feature}."}
 
 @app.route('/data-preparation.html', methods=['GET', 'POST'])
+@login_required
 def data_preparation():
     message = ""
     columns = []
@@ -354,6 +465,7 @@ def update_use_column():
         return jsonify({'success': True})
     return jsonify({'success': False, 'message': 'Column not specified'})
 @app.route('/statistical-analysis.html')
+@login_required
 def statistical_analysis():
     preparation_filepath = session.get('preparation_filepath')
     if not preparation_filepath:
@@ -505,6 +617,7 @@ def check_analysis_status():
     
 
 @app.route('/causal-analysis.html', methods=['GET', 'POST'])
+@login_required
 def causal_analysis_view():
     csv_data = []
     output_file_path = os.path.join('static', 'result.csv')
@@ -625,10 +738,12 @@ def get_csv_data_new():
     return jsonify(csv_data)
 
 @app.route('/big-model-analysis.html')
+@login_required
 def big_model_analysis():
     return render_template('big-model-analysis.html')
 
 @app.route('/favorites.html')
+@login_required
 def favorites():
     return render_template('favorites.html')
 
