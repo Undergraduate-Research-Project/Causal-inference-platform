@@ -128,6 +128,7 @@
             <p class="error-msg" id="error-msg" style="display: none; color: red;"></p>
             <p class="success-msg" id="success-msg" style="display: none; color: green;"></p>
         </form>
+        
         <div class="register-link">
             <a href="#" id="show-register">没有账户？注册</a>
         </div>
@@ -176,6 +177,9 @@
             .then(data => {
                 if (data.success) {
                     successMsg.textContent = data.message;
+                    if (data.auth_method === 'local') {
+                        successMsg.textContent += ' (本地认证)';
+                    }
                     successMsg.style.display = "block";
                     
                     // 延迟跳转到主页
@@ -184,6 +188,12 @@
                     }, 1000);
                 } else {
                     errorMsg.textContent = data.message;
+                    
+                    // 如果有本地账户提示，显示给用户
+                    if (data.local_accounts_hint) {
+                        errorMsg.innerHTML = data.message + '<br><small style="color: #666;">' + data.local_accounts_hint + '</small>';
+                    }
+                    
                     errorMsg.style.display = "block";
                 }
             })

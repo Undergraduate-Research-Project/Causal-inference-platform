@@ -44,9 +44,8 @@ def login():
         data = request.get_json()
         username = data.get('username')
         password = data.get('password')
-        print("*****************")
-        print(username)
-        print(password)
+        
+        logging.info(f"用户登录请求: {username}")
         
         if not username or not password:
             return jsonify({
@@ -54,7 +53,7 @@ def login():
                 'message': '用户名和密码不能为空'
             }), 400
         
-        # 使用火伴API进行用户认证
+        # 使用火伴API进行用户认证（带本地备份）
         auth_result = db.authenticate_user(username, password)
         
         if auth_result['success']:
@@ -62,23 +61,29 @@ def login():
             session['logged_in'] = True
             session['username'] = username
             session['user_id'] = auth_result['user']['user_id']
+            session['auth_method'] = auth_result['user'].get('auth_method', 'huoban')
+            
+            logging.info(f"用户登录成功: {username}, 认证方式: {session['auth_method']}")
             
             return jsonify({
                 'success': True,
                 'message': '登录成功',
+                'auth_method': session['auth_method'],
                 'redirect_url': url_for('index')
             })
         else:
+            logging.warning(f"用户登录失败: {username}, 原因: {auth_result.get('message')}")
             return jsonify({
                 'success': False,
-                'message': auth_result.get('message', '登录失败')
+                'message': auth_result.get('message', '登录失败'),
+                'local_accounts_hint': auth_result.get('local_accounts_hint')
             }), 401
             
     except Exception as e:
         logging.error(f"登录处理错误: {str(e)}")
         return jsonify({
             'success': False,
-            'message': '登录过程中发生错误'
+            'message': '登录过程中发生错误，请稍后重试'
         }), 500
 
 @app.route('/register', methods=['POST'])
@@ -89,6 +94,8 @@ def register():
         username = data.get('username')
         password = data.get('password')
         email = data.get('email', '')
+        
+        logging.info(f"用户注册请求: {username}")
         
         if not username or not password:
             return jsonify({
@@ -101,26 +108,29 @@ def register():
         if email:
             additional_data['email'] = email
         
-        # 使用火伴API进行用户注册
+        # 使用火伴API进行用户注册（带本地提示）
         register_result = db.register_user(username, password, additional_data)
         
         if register_result['success']:
+            logging.info(f"用户注册成功: {username}")
             return jsonify({
                 'success': True,
-                'message': '注册成功，请登录',
+                'message': register_result.get('message', '注册成功'),
                 'user_id': register_result.get('user_id')
             })
         else:
+            logging.warning(f"用户注册失败: {username}, 原因: {register_result.get('message')}")
             return jsonify({
                 'success': False,
-                'message': register_result.get('message', '注册失败')
+                'message': register_result.get('message', '注册失败'),
+                'local_accounts_hint': register_result.get('local_accounts_hint')
             }), 400
             
     except Exception as e:
         logging.error(f"注册处理错误: {str(e)}")
         return jsonify({
             'success': False,
-            'message': '注册过程中发生错误'
+            'message': '注册过程中发生错误，请稍后重试'
         }), 500
 
 @app.route('/logout')
