@@ -1,12 +1,11 @@
 ﻿Node1,Node2,Endpoint1,Endpoint2
-gender,math score,TAIL,ARROW
-gender,writing score,TAIL,ARROW
-race/ethnicity,math score,TAIL,ARROW
-parental level of education,reading score,TAIL,ARROW
-parental level of education,writing score,TAIL,ARROW
-lunch,math score,TAIL,ARROW
-test preparation course,reading score,TAIL,ARROW
-test preparation course,writing score,TAIL,ARROW
-reading score,math score,TAIL,ARROW
-math score,writing score,TAIL,ARROW
-reading score,writing score,TAIL,ARROW
+Rings,Shell weight,TAIL,ARROW
+Rings,Height,TAIL,ARROW
+Diameter,Length,TAIL,ARROW
+Shell weight,Diameter,TAIL,ARROW
+Shell weight,Height,TAIL,ARROW
+Whole weight,Shell weight,TAIL,ARROW
+Shucked weight,Shell weight,TAIL,ARROW
+Diameter,Height,TAIL,ARROW
+Whole weight,Height,TAIL,ARROW
+Whole weight,Shucked weight,TAIL,TAIL
