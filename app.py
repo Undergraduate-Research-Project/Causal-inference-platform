@@ -6,7 +6,9 @@ import logging
 import networkx as nx 
 import subprocess
 import json
+import sys
 from datetime import datetime
+from werkzeug.middleware.proxy_fix import ProxyFix
 from column_type_detector import detect_column_types as detect_analysis_types 
 from detect_type import detect_column_types  
 from EI.calculator import *
@@ -20,8 +22,17 @@ app_config = config[env]
 
 app = Flask(__name__)
 app.config.from_object(app_config)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+STATIC_FOLDER = os.path.join(BASE_DIR, 'static')
 UPLOAD_FOLDER = app.config['UPLOAD_FOLDER']
+if not os.path.isabs(UPLOAD_FOLDER):
+    UPLOAD_FOLDER = os.path.join(BASE_DIR, UPLOAD_FOLDER)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+RESULT_CSV_PATH = os.path.join(STATIC_FOLDER, 'result.csv')
+RESULT_NEW_CSV_PATH = os.path.join(STATIC_FOLDER, 'result_new.csv')
+SCATTER_CSV_PATH = os.path.join(STATIC_FOLDER, 'scatter_data.csv')
+FLAG_FILE_PATH = os.path.join(BASE_DIR, 'in_progress.flag')
 client = DeepSeekClient()
 db = HuobanDB(app_config)  # 使用配置初始化数据库连接
 selected_var = ""
@@ -30,12 +41,16 @@ selected_var = ""
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
 
-if not os.path.exists('static'):
-    os.makedirs('static')
+if not os.path.exists(STATIC_FOLDER):
+    os.makedirs(STATIC_FOLDER)
 
 @app.route('/')
 def log_in():
     return render_template('log-in.html')
+
+@app.route('/healthz')
+def healthz():
+    return jsonify({'status': 'ok'}), 200
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -249,8 +264,7 @@ def scatter_plot():
     preparation_filepath = session.get('preparation_filepath')
     df = pd.read_csv(preparation_filepath)
 
-    csv_path = os.path.join('static', 'scatter_data.csv')
-    df[[x_column, y_column]].to_csv(csv_path, index=False)
+    df[[x_column, y_column]].to_csv(SCATTER_CSV_PATH, index=False)
 
     return jsonify({'csv_url': url_for('static', filename='scatter_data.csv')})
 
@@ -619,8 +633,7 @@ def get_var():
 # 检查分析状态的路由
 @app.route('/check-analysis-status', methods=['GET'])
 def check_analysis_status():
-    flag_file_path = "in_progress.flag"
-    if os.path.exists(flag_file_path):
+    if os.path.exists(FLAG_FILE_PATH):
         return jsonify({"completed": False})
     else:
         return jsonify({"completed": True})
@@ -630,7 +643,7 @@ def check_analysis_status():
 @login_required
 def causal_analysis_view():
     csv_data = []
-    output_file_path = os.path.join('static', 'result.csv')
+    output_file_path = RESULT_CSV_PATH
 
     if request.method == 'POST':
         # 从会话中获取数据文件路径
@@ -656,17 +669,16 @@ def causal_analysis_view():
         print(type(selected_var))
 
         # 创建标志文件，表示分析开始
-        flag_file_path = "in_progress.flag"
-        with open(flag_file_path, 'w') as f:
+        with open(FLAG_FILE_PATH, 'w') as f:
             f.write("Analysis in progress")
 
         # 启动分析任务
         try:
             if algorithm == 'pc':
                 print("now is pc")
-                script_path = 'PC算法/pc_easy.py'
+                script_path = os.path.join(BASE_DIR, 'PC算法', 'pc_easy.py')
                 result = subprocess.run(
-                    ['python', script_path, '--data_file', data_file_path, '--output_file', output_file_path, '--background_edge', background_edge_json,'--variable_names',selected_var],
+                    [sys.executable, script_path, '--data_file', data_file_path, '--output_file', output_file_path, '--background_edge', background_edge_json,'--variable_names',selected_var],
                     capture_output=True, text=True
                 )
                 print("STDOUT:", result.stdout)
@@ -674,9 +686,9 @@ def causal_analysis_view():
 
             elif algorithm == 'gies':
                 print("now is gies")
-                script_path = 'GIES算法/gies_easy.py'
+                script_path = os.path.join(BASE_DIR, 'GIES算法', 'gies_easy.py')
                 result = subprocess.run(
-                    ['python', script_path, '--data_file', data_file_path, '--output_file', output_file_path, '--background_edge', background_edge_json,'--variable_names',selected_var],
+                    [sys.executable, script_path, '--data_file', data_file_path, '--output_file', output_file_path, '--background_edge', background_edge_json,'--variable_names',selected_var],
                     capture_output=True, text=True
                 )
 
@@ -701,8 +713,8 @@ def causal_analysis_view():
 
         finally:
             # 删除标志文件，表示分析完成
-            if os.path.exists(flag_file_path):
-                os.remove(flag_file_path)
+            if os.path.exists(FLAG_FILE_PATH):
+                os.remove(FLAG_FILE_PATH)
             print("Analysis completed, flag file removed.")
 
         print(output_file_path)
@@ -715,7 +727,7 @@ def causal_analysis_view():
 
 @app.route('/get-csv-data', methods=['GET'])
 def get_csv_data():
-    output_file_path = os.path.join('static', 'result.csv')
+    output_file_path = RESULT_CSV_PATH
 
     if not os.path.exists(output_file_path):
         return jsonify({"error": "结果文件未找到"}), 404
@@ -736,7 +748,7 @@ def get_csv_data():
 
 @app.route('/get_csv_data_new', methods=['GET'])
 def get_csv_data_new():
-    output_file_path = os.path.join('static', 'result_new.csv')
+    output_file_path = RESULT_NEW_CSV_PATH
 
     if not os.path.exists(output_file_path):
         return jsonify({"error": "结果文件未找到"}), 404
@@ -870,7 +882,7 @@ def calculate_effect():
     try:
         # 读取CSV文件并创建图
         G = nx.DiGraph()
-        df = pd.read_csv('static/result_new.csv')
+        df = pd.read_csv(RESULT_NEW_CSV_PATH)
         edges = []
         for _, row in df.iterrows():
             node1 = row['Node1']
@@ -927,4 +939,8 @@ def calculate_effect():
 
 if __name__ == "__main__":
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-    app.run(debug=True)
+    app.run(
+        host=os.environ.get('APP_HOST', '127.0.0.1'),
+        port=int(os.environ.get('APP_PORT', '5000')),
+        debug=app.config.get('DEBUG', False)
+    )

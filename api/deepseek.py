@@ -168,7 +168,7 @@ class DeepSeekClient:
                         请严格遵循后门准则：
                         1. ​**阻断所有非因果路径**​（后门路径）:  
                         - 使用d-分离原则识别所有从 {data['cause_var']} 到 {data['effect_var']} 的 ​**非因果路径**​（即指向 {data['cause_var']} 的路径）。
-                        - 确保调整集合阻断这些路径（如链结构 $i \rightarrow m \rightarrow j$ 或分叉结构 $i \leftarrow m \rightarrow j$ 需包含$m$，对撞结构 $i \rightarrow m \leftarrow j$ 需不含$m$及其后代）。
+                        - 确保调整集合阻断这些路径（如链结构 $i \\rightarrow m \\rightarrow j$ 或分叉结构 $i \\leftarrow m \\rightarrow j$ 需包含$m$，对撞结构 $i \\rightarrow m \\leftarrow j$ 需不含$m$及其后代）。
 
                         2. ​**不包含任何中介变量**​（即 {data['cause_var']} 的后代）:  
                         - 排除所有位于 {data['cause_var']} 到 {data['effect_var']} 因果路径上的变量。

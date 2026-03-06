@@ -1,0 +1,12 @@
+.git
+.gitignore
+.env
+.idea
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.DS_Store
+uploads/
+app.log
+in_progress.flag
