@@ -18,11 +18,6 @@ class Config:
     # 会话配置
     PERMANENT_SESSION_LIFETIME = timedelta(hours=24)
     
-    # 火伴API配置
-    HUOBAN_API_HOST = "api.huoban.com"
-    HUOBAN_TABLE_ID = "2100000066422526"
-    HUOBAN_API_KEY = "9pTFg4AxdFRKsTb1y9667Rq1uoF2kCAtRsjXmVEe"
-    
     # DeepSeek API配置（如果有的话）
     DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY') or ""
     

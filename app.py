@@ -11,7 +11,7 @@ from column_type_detector import detect_column_types as detect_analysis_types
 from detect_type import detect_column_types  
 from EI.calculator import *
 from api.deepseek import DeepSeekClient
-from api.huoban_db import HuobanDB
+from api.huoban_db import LocalAuthDB
 from config import config
 
 # 获取配置
@@ -23,7 +23,7 @@ app.config.from_object(app_config)
 UPLOAD_FOLDER = app.config['UPLOAD_FOLDER']
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 client = DeepSeekClient()
-db = HuobanDB(app_config)  # 使用配置初始化数据库连接
+db = LocalAuthDB(app_config)  # 使用本地认证数据库
 selected_var = ""
 
 
